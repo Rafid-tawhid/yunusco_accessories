@@ -14,17 +14,19 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50]!,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with user info
-          _buildHeader(context),
-
-          // Dashboard Grid Menu
-          Expanded(
-            child: _buildDashboardGrid(context),
-          ),
-        ],
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with user info
+            _buildHeader(context),
+        
+            // Dashboard Grid Menu
+            Expanded(
+              child: _buildDashboardGrid(context),
+            ),
+          ],
+        ),
       ),
     );
   }

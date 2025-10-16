@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:yunusco_accessories/firebase/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:yunusco_accessories/riverpod/role_provider.dart';
+import 'package:yunusco_accessories/riverpod/auth_provider.dart';
+import 'package:yunusco_accessories/riverpod/data_provider.dart';
 import 'package:yunusco_accessories/widgets/password_bottom_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,39 +42,45 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   void _login() async {
     if (_loginEmailController.text.isEmpty) {
-      _showError('Please enter your email');
+      _showError('Please enter your username');
       return;
     }
 
-    if (!_isValidEmail(_loginEmailController.text)) {
-      _showError('Please enter a valid email');
-      return;
-    }
+    // if (!_isValidEmail(_loginEmailController.text)) {
+    //   _showError('Please enter a valid email');
+    //   return;
+    // }
 
-    setState(() {
-      _isLoginLoading = true;
-    });
+    //final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    //var data=await _firestore.collection('users').where('email',isEqualTo: _loginEmailController.text.trim()).limit(1).get();
 
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    var data=await _firestore.collection('users').where('email',isEqualTo: _loginEmailController.text.trim()).limit(1).get();
 
-    setState(() {
-      _isLoginLoading = false;
-    });
-    if(data.docs.isNotEmpty){
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => PasswordBottomSheet(
-          onPasswordVerified: (password) {
-          },
-          title: 'Admin Access',
-          email:_loginEmailController.text.trim(),
-          description: 'Enter admin password to proceed',
-        ),
-      );
-    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PasswordBottomSheet(
+        onPasswordVerified: (password) {
+        },
+        title: 'Admin Access',
+        email:_loginEmailController.text.trim(),
+        description: 'Enter admin password to proceed',
+      ),
+    );
+    // if(data.docs.isNotEmpty){
+    //   showModalBottomSheet(
+    //     context: context,
+    //     isScrollControlled: true,
+    //     backgroundColor: Colors.transparent,
+    //     builder: (context) => PasswordBottomSheet(
+    //       onPasswordVerified: (password) {
+    //       },
+    //       title: 'Admin Access',
+    //       email:_loginEmailController.text.trim(),
+    //       description: 'Enter admin password to proceed',
+    //     ),
+    //   );
+    // }
 
   }
 
@@ -103,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       _isSignupLoading = true;
     });
 
-    var result=await AuthService.signUpWithFirebase(email:_signupEmailController.text.trim(),password:  _signupPasswordController.text.trim(), context: context);
+    //var result=await AuthService.signUpWithFirebase(email:_signupEmailController.text.trim(),password:  _signupPasswordController.text.trim(), context: context);
 
     // debugPrint('result ${result.toString()}');
 
@@ -132,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -238,6 +246,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 ),
 
                 SizedBox(height: 30),
+                Consumer(
+                  builder: (context,ref,_) {
+                    final authState = ref.watch(authProvider);
+                    return Text(authState.error??'',style: TextStyle(color: Colors.red),);
+                  }
+                ),
 
                 // Tab Bar View
                 Expanded(
@@ -295,7 +309,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               controller: _loginEmailController,
               decoration: InputDecoration(
                 prefixIcon: Icon(Icons.email_rounded, color: Colors.grey[600]),
-                hintText: 'Enter your email',
+                hintText: 'Enter your username',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
@@ -304,6 +318,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
 
           SizedBox(height: 30),
+
 
           // Login Button
           SizedBox(
