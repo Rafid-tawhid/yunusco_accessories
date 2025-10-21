@@ -11,7 +11,8 @@ class ApiService {
   late Dio _dio;
 
   /// Base URL for all API calls
-  static const String baseUrl = 'http://202.74.243.118:8090/';
+  static const String baseUrl = 'http://192.168.5.4:8030/';
+  String? _sessionCookie; // store ASP.NET session cookie
 
   void _initDio() {
     _dio = Dio(
@@ -28,24 +29,67 @@ class ApiService {
     // Add interceptors
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
+        // 🔹 Attach cookie if available
+        if (_sessionCookie != null) {
+          options.headers['Cookie'] = _sessionCookie;
+        }
+
         debugPrint('➡️ [REQUEST] ${options.method} ${options.uri}');
         debugPrint('Headers: ${options.headers}');
         debugPrint('Data: ${options.data}');
         return handler.next(options);
       },
       onResponse: (response, handler) {
+        // 🔹 Extract cookie if login API returns it
+        if (response.headers.map.containsKey('set-cookie')) {
+          final cookies = response.headers.map['set-cookie']!;
+          for (var cookie in cookies) {
+            if (cookie.startsWith('ASP.NET_SessionId=')) {
+              _sessionCookie = cookie.split(';').first;
+              debugPrint('🍪 New Session Cookie: $_sessionCookie');
+            }
+          }
+        }
+
         debugPrint('✅ [RESPONSE] ${response.statusCode} -> ${response.data}');
         return handler.next(response);
       },
       onError: (DioError error, handler) {
         debugPrint('❌ [ERROR] ${error.response?.statusCode} -> ${error.message}');
+        // Handle expired session (e.g., 401 or empty response)
+        if (error.response?.statusCode == 401 ||
+            (error.response?.data == null &&
+                _sessionCookie != null)) {
+          debugPrint('⚠️ Session expired, please login again.');
+        }
         return handler.next(error);
       },
     ));
   }
 
-  void setToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+  /// 🔹 Login API - stores session cookie
+  Future<bool> login(String username, String password) async {
+    try {
+      final response = await _dio.post(
+        'Login/Login',
+        options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+        data: FormData.fromMap({
+          'LoginName': username,
+          'Password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Login Successful');
+        return true;
+      } else {
+        debugPrint('⚠️ Login Failed: ${response.statusCode}');
+        return false;
+      }
+    } on DioError catch (e) {
+      _handleError(e);
+      return false;
+    }
   }
 
   /// GET Request
@@ -63,29 +107,8 @@ class ApiService {
   Future<Response?> post(String endpoint, dynamic data,
       {Map<String, dynamic>? query}) async {
     try {
-      final response = await _dio.post(endpoint, data: data, queryParameters: query);
-      return response;
-    } on DioError catch (e) {
-      _handleError(e);
-      return e.response;
-    }
-  }
-
-  /// PUT Request
-  Future<Response?> put(String endpoint, dynamic data) async {
-    try {
-      final response = await _dio.put(endpoint, data: data);
-      return response;
-    } on DioError catch (e) {
-      _handleError(e);
-      return e.response;
-    }
-  }
-
-  /// DELETE Request
-  Future<Response?> delete(String endpoint, {dynamic data}) async {
-    try {
-      final response = await _dio.delete(endpoint, data: data);
+      final response =
+      await _dio.post(endpoint, data: data, queryParameters: query);
       return response;
     } on DioError catch (e) {
       _handleError(e);
@@ -104,5 +127,17 @@ class ApiService {
     } else {
       debugPrint('🚫 Unexpected error: ${e.message}');
     }
+  }
+
+  /// Optional: Manually set cookie (if known)
+  void setCookie(String cookie) {
+    _sessionCookie = cookie;
+    debugPrint('🍪 Manually set cookie: $_sessionCookie');
+  }
+
+  /// Optional: Clear cookie on logout
+  void clearCookie() {
+    _sessionCookie = null;
+    debugPrint('🚪 Session cleared');
   }
 }

@@ -1,21 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'login_screen.dart';
 import 'firebase_options.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 Future<void> main() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('✅ SUCCESS: Firebase connected!');
-  } catch (e) {
-    print('❌ ERROR: $e');
-  }
+  // try {
+  //   WidgetsFlutterBinding.ensureInitialized();
+  //   await Firebase.initializeApp(
+  //     options: DefaultFirebaseOptions.currentPlatform,
+  //   );
+  //   print('✅ SUCCESS: Firebase connected!');
+  // } catch (e) {
+  //   print('❌ ERROR: $e');
+  // }
   runApp(ProviderScope(child: MyApp()));
 }
 

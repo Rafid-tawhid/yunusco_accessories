@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:yunusco_accessories/firebase/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:yunusco_accessories/riverpod/auth_provider.dart';
-import 'package:yunusco_accessories/riverpod/data_provider.dart';
-import 'package:yunusco_accessories/widgets/password_bottom_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yunusco_accessories/riverpod/auth_provider.dart';
+import 'package:yunusco_accessories/screens/dashboard_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+
+class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
   final _loginEmailController = TextEditingController();
+  final _loginPasswordController = TextEditingController();
   final _signupEmailController = TextEditingController();
   final _signupPasswordController = TextEditingController();
   final _signupConfirmPasswordController = TextEditingController();
@@ -22,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _isLoginLoading = false;
   bool _isSignupLoading = false;
   bool _obscurePassword = true;
+  bool _obscureSignupPassword = true;
   bool _obscureConfirmPassword = true;
 
   @override
@@ -34,97 +37,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   void dispose() {
     _tabController.dispose();
     _loginEmailController.dispose();
+    _loginPasswordController.dispose();
     _signupEmailController.dispose();
     _signupPasswordController.dispose();
     _signupConfirmPasswordController.dispose();
     super.dispose();
-  }
-
-  void _login() async {
-    if (_loginEmailController.text.isEmpty) {
-      _showError('Please enter your username');
-      return;
-    }
-
-    // if (!_isValidEmail(_loginEmailController.text)) {
-    //   _showError('Please enter a valid email');
-    //   return;
-    // }
-
-    //final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    //var data=await _firestore.collection('users').where('email',isEqualTo: _loginEmailController.text.trim()).limit(1).get();
-
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => PasswordBottomSheet(
-        onPasswordVerified: (password) {
-        },
-        title: 'Admin Access',
-        email:_loginEmailController.text.trim(),
-        description: 'Enter admin password to proceed',
-      ),
-    );
-    // if(data.docs.isNotEmpty){
-    //   showModalBottomSheet(
-    //     context: context,
-    //     isScrollControlled: true,
-    //     backgroundColor: Colors.transparent,
-    //     builder: (context) => PasswordBottomSheet(
-    //       onPasswordVerified: (password) {
-    //       },
-    //       title: 'Admin Access',
-    //       email:_loginEmailController.text.trim(),
-    //       description: 'Enter admin password to proceed',
-    //     ),
-    //   );
-    // }
-
-  }
-
-  void _signup() async {
-    if (_signupEmailController.text.isEmpty ||
-        _signupPasswordController.text.isEmpty) {
-      _showError('Please fill all fields');
-      return;
-    }
-
-    if (!_isValidEmail(_signupEmailController.text)) {
-      _showError('Please enter a valid email');
-      return;
-    }
-
-    if (_signupPasswordController.text.length < 6) {
-      _showError('Password must be at least 6 characters');
-      return;
-    }
-
-    if (_signupPasswordController.text != _signupConfirmPasswordController.text) {
-      _showError('Passwords do not match');
-      return;
-    }
-
-    setState(() {
-      _isSignupLoading = true;
-    });
-
-    //var result=await AuthService.signUpWithFirebase(email:_signupEmailController.text.trim(),password:  _signupPasswordController.text.trim(), context: context);
-
-    // debugPrint('result ${result.toString()}');
-
-    setState(() {
-      _isSignupLoading = false;
-    });
-
-
-    // Navigate to home screen
-  }
-
-  bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
   }
 
   void _showError(String message) {
@@ -132,142 +49,144 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
+  Future<void> _login() async {
+    final email = _loginEmailController.text.trim();
+    final password = _loginPasswordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter username and password');
+      return;
+    }
+
+    setState(() => _isLoginLoading = true);
+
+    try {
+      // Call your Riverpod provider API
+       var response= await ref.read(authProvider.notifier).loginUser(email, password);
+       debugPrint('CURRENT RESPONSE ${response}');
+       if(response){
+         Navigator.push(
+           context,
+           MaterialPageRoute(builder: (_) => const DashboardScreen()),
+         );
+
+       }
+    } catch (e) {
+      _showError('Login failed: $e');
+    } finally {
+      setState(() => _isLoginLoading = false);
+    }
+  }
+
+  Future<void> _signup() async {
+    final email = _signupEmailController.text.trim();
+    final pass = _signupPasswordController.text.trim();
+    final confirm = _signupConfirmPasswordController.text.trim();
+
+    if (email.isEmpty || pass.isEmpty || confirm.isEmpty) {
+      _showError('Please fill all fields');
+      return;
+    }
+
+    if (pass != confirm) {
+      _showError('Passwords do not match');
+      return;
+    }
+
+    setState(() => _isSignupLoading = true);
+
+    try {
+      // Example call to signup API
+      await ref.read(authProvider.notifier).signupUser(email, pass);
+    } catch (e) {
+      _showError('Signup failed: $e');
+    } finally {
+      setState(() => _isSignupLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Container(
-            height: MediaQuery.of(context).size.height,
-            padding: EdgeInsets.all(24),
-            child: Column(
-              children: [
-                // Header with Logo
-                SizedBox(height: 40),
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF2C5530),
-                        Color(0xFF4A7C59),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFF2C5530).withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.brush_rounded,
-                    color: Colors.white,
-                    size: 35,
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              const Icon(Icons.business, color: Color(0xFF2C5530), size: 60),
+              const SizedBox(height: 16),
+              const Text(
+                'Yunusco BD Ltd',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C5530),
                 ),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                'Premium Garments Accessories',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 30),
 
-                SizedBox(height: 20),
-
-                Text(
-                  'Yunusco BD Ltd',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C5530),
-                    letterSpacing: 1.2,
-                  ),
+              // Tabs
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
                 ),
-
-                SizedBox(height: 5),
-
-                Text(
-                  'Premium Garments Accessories',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-
-                SizedBox(height: 40),
-
-                // Tab Bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF2C5530),
                   ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Color(0xFF2C5530),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.grey[700],
-                    labelStyle: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                    unselectedLabelStyle: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                    ),
-                    tabs: [
-                      Tab(
-                        child: Container(
-                          width: double.infinity,
-                          alignment: Alignment.center,
-                          child: Text('Login'),
-                        ),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey[700],
+                  indicatorSize: TabBarIndicatorSize.tab, // 👈 important line
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                  tabs: const [
+                    Tab(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Text('Login'),
                       ),
-                      Tab(
-                        child: Container(
-                          width: double.infinity,
-                          alignment: Alignment.center,
-                          child: Text('Sign Up'),
-                        ),
+                    ),
+                    Tab(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Text('Sign Up'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
 
-                SizedBox(height: 30),
-                Consumer(
-                  builder: (context,ref,_) {
-                    final authState = ref.watch(authProvider);
-                    return Text(authState.error??'',style: TextStyle(color: Colors.red),);
-                  }
+              const SizedBox(height: 30),
+              if (authState.error != null)
+                Text(authState.error!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 10),
+
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildLoginForm(),
+                    _buildSignupForm(),
+                  ],
                 ),
-
-                // Tab Bar View
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      // Login Tab
-                      _buildLoginForm(),
-
-                      // Signup Tab
-                      _buildSignupForm(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -275,263 +194,138 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Widget _buildLoginForm() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Text(
-            'Welcome Back',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF2C5530),
-            ),
-          ),
-
-          SizedBox(height: 10),
-
-          Text(
-            'Sign in to continue to your account',
-            style: TextStyle(
-              color: Colors.grey[600],
-            ),
-          ),
-
-          SizedBox(height: 40),
-
-          // Email Field
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: TextField(
-              controller: _loginEmailController,
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.email_rounded, color: Colors.grey[600]),
-                hintText: 'Enter your username',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-          ),
-
-          SizedBox(height: 30),
-
-
-          // Login Button
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _isLoginLoading ? null : _login,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF2C5530),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-              child: _isLoginLoading
-                  ? SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : Text(
-                'Login',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // Forgot Password
-          TextButton(
-            onPressed: () {
-              _showError('Password reset feature coming soon');
-            },
-            child: Text(
-              'Forgot your email?',
-              style: TextStyle(
-                color: Color(0xFF4A7C59),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _textField(
+          controller: _loginEmailController,
+          hint: 'Enter username',
+          icon: Icons.person,
+        ),
+        const SizedBox(height: 16),
+        _textField(
+          controller: _loginPasswordController,
+          hint: 'Enter password',
+          icon: Icons.lock,
+          obscureText: _obscurePassword,
+          onSuffixTap: () =>
+              setState(() => _obscurePassword = !_obscurePassword),
+        ),
+        const SizedBox(height: 24),
+        _actionButton(
+          text: 'Login',
+          loading: _isLoginLoading,
+          onPressed: _login,
+        ),
+      ],
     );
   }
 
   Widget _buildSignupForm() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Text(
-            'Create Account',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF2C5530),
-            ),
-          ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _textField(
+          controller: _signupEmailController,
+          hint: 'Enter email',
+          icon: Icons.email,
+        ),
+        const SizedBox(height: 16),
+        _textField(
+          controller: _signupPasswordController,
+          hint: 'Create password',
+          icon: Icons.lock,
+          obscureText: _obscureSignupPassword,
+          onSuffixTap: () =>
+              setState(() => _obscureSignupPassword = !_obscureSignupPassword),
+        ),
+        const SizedBox(height: 16),
+        _textField(
+          controller: _signupConfirmPasswordController,
+          hint: 'Confirm password',
+          icon: Icons.lock_outline,
+          obscureText: _obscureConfirmPassword,
+          onSuffixTap: () =>
+              setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+        ),
+        const SizedBox(height: 24),
+        _actionButton(
+          text: 'Sign Up',
+          loading: _isSignupLoading,
+          onPressed: _signup,
+        ),
+      ],
+    );
+  }
 
-          SizedBox(height: 10),
-
-          Text(
-            'Sign up to get started with Yunusco',
-            style: TextStyle(
+  Widget _textField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    VoidCallback? onSuffixTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: Colors.grey[600]),
+          suffixIcon: onSuffixTap != null
+              ? IconButton(
+            icon: Icon(
+              obscureText ? Icons.visibility_off : Icons.visibility,
               color: Colors.grey[600],
             ),
+            onPressed: onSuffixTap,
+          )
+              : null,
+          hintText: hint,
+          border: InputBorder.none,
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionButton({
+    required String text,
+    required bool loading,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton(
+        onPressed: loading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2C5530),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-
-          SizedBox(height: 40),
-
-          // Email Field
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: TextField(
-              controller: _signupEmailController,
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.email_rounded, color: Colors.grey[600]),
-                hintText: 'Enter your email',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
+        ),
+        child: loading
+            ? const SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
           ),
-
-          SizedBox(height: 20),
-
-          // Password Field
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: TextField(
-              controller: _signupPasswordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.lock_rounded, color: Colors.grey[600]),
-                hintText: 'Create password',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey[600],
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // Confirm Password Field
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: TextField(
-              controller: _signupConfirmPasswordController,
-              obscureText: _obscureConfirmPassword,
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.lock_outline_rounded, color: Colors.grey[600]),
-                hintText: 'Confirm password',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey[600],
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscureConfirmPassword = !_obscureConfirmPassword;
-                    });
-                  },
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 30),
-
-          // Signup Button
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _isSignupLoading ? null : _signup,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF2C5530),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-              child: _isSignupLoading
-                  ? SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : Text(
-                'Create Account',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // Terms and Conditions
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'By creating an account, you agree to our Terms of Service and Privacy Policy',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
+        )
+            : Text(
+          text,
+          style:
+          const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
 }
-

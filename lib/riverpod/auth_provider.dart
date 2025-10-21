@@ -1,65 +1,64 @@
-// lib/providers/providers.dart
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../helper_class/api_service_class.dart';
-import 'package:dio/dio.dart';
-
-import '../helper_class/response_state.dart';
-
-// Create global instances
-final apiServiceProvider = Provider((ref) => ApiService());
-
-// Auth provider
-final authProvider = StateNotifierProvider<AuthNotifier, ResponseState>((ref) {
-  return AuthNotifier(ref.read(apiServiceProvider));
-});
+import 'package:yunusco_accessories/helper_class/api_service_class.dart';
+import 'package:yunusco_accessories/helper_class/user_data.dart';
+import 'package:yunusco_accessories/models/user_model.dart';
 
 
-// Auth notifier
-class AuthNotifier extends StateNotifier<ResponseState> {
-  final ApiService apiService;
 
-  AuthNotifier(this.apiService) : super(const ResponseState());
+class AuthState {
+  final bool isLoading;
+  final String? error;
 
-  Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+  AuthState({this.isLoading = false, this.error});
 
+  AuthState copyWith({bool? isLoading, String? error}) =>
+      AuthState(isLoading: isLoading ?? this.isLoading, error: error);
+}
+
+class AuthNotifier extends StateNotifier<AuthState> {
+  AuthNotifier() : super(AuthState());
+
+  Future<bool> loginUser(String email, String password) async {
     try {
-      final response = await apiService.post('api/Accounts/GetUserLogin', {
-        'username': email,
-        'password': password,
+      state = state.copyWith(isLoading: true, error: null);
+      ApiService apiService = ApiService();
+      var data = await apiService.post('Login/Login', {
+        'LoginName': email,
+        'Password': password
       });
+      debugPrint('This is data ${data!.data['output'].toString()=="success"}');
 
-      if (response?.statusCode == 200) {
-        // Set token for future requests
-        if (response!.data['token'] != null) {
-          apiService.setToken(response.data['token']);
-        }
-
-        state = state.copyWith(
-          isLoading: false,
-          response: response.data,
-          error: null,
-        );
+      if (data.data['output'].toString()=="success") {
+        UserData.user = UserModel.fromJson(data.data['rValue']);
+        debugPrint('Is this calling ??');
+        return true; // Success
       } else {
-        state = state.copyWith(
-          isLoading: false,
-          error: response?.data?['message']??response?.data?['msg'] ?? 'Login failed',
-        );
+        state = state.copyWith(error: 'Login failed: ${data.data['message']}');
+        return false; // Failed
       }
-    } on DioError catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.response?.data?['message'] ?? e.message ?? 'Network error',
-      );
+
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Something went wrong',
-      );
+      state = state.copyWith(error: e.toString());
+      return false; // Error
+    } finally {
+      state = state.copyWith(isLoading: false);
     }
   }
 
-  void clearError() {
-    state = state.copyWith(error: null);
+  Future<void> signupUser(String email, String password) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      // Example API call
+      await Future.delayed(const Duration(seconds: 1));
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
   }
 }
+
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
+      (ref) => AuthNotifier(),
+);
