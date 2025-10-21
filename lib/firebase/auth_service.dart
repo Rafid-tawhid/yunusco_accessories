@@ -4,7 +4,7 @@
 // import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../helper_class/helper_message.dart';
+import '../helper_class/helper_class.dart';
 import '../riverpod/data_provider.dart';
 // class AuthService {
 //   static final FirebaseAuth _auth = FirebaseAuth.instance;

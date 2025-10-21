@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yunusco_accessories/helper_class/helper_class.dart';
 import 'package:yunusco_accessories/riverpod/auth_provider.dart';
 import 'package:yunusco_accessories/screens/dashboard_screen.dart';
 
@@ -30,7 +31,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   void initState() {
     super.initState();
+    getSavedValues();
     _tabController = TabController(length: 2, vsync: this);
+
   }
 
   @override
@@ -69,6 +72,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
        var response= await ref.read(authProvider.notifier).loginUser(email, password);
        debugPrint('CURRENT RESPONSE ${response}');
        if(response){
+         DashboardHelper.saveString('user', _loginEmailController.text.trim());
+         DashboardHelper.saveString('pass', _loginPasswordController.text.trim());
          Navigator.push(
            context,
            MaterialPageRoute(builder: (_) => const DashboardScreen()),
@@ -116,77 +121,81 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              const Icon(Icons.business, color: Color(0xFF2C5530), size: 60),
-              const SizedBox(height: 16),
-              const Text(
-                'Yunusco BD Ltd',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C5530),
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Premium Garments Accessories',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 30),
-
-              // Tabs
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: const Color(0xFF2C5530),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                const Icon(Icons.business, color: Color(0xFF2C5530), size: 60),
+                const SizedBox(height: 16),
+                const Text(
+                  'Yunusco BD Ltd',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C5530),
                   ),
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.grey[700],
-                  indicatorSize: TabBarIndicatorSize.tab, // 👈 important line
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
-                  tabs: const [
-                    Tab(
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: Text('Login'),
-                      ),
-                    ),
-                    Tab(
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: Text('Sign Up'),
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-
-              const SizedBox(height: 30),
-              if (authState.error != null)
-                Text(authState.error!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 10),
-
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildLoginForm(),
-                    _buildSignupForm(),
-                  ],
+                const SizedBox(height: 5),
+                const Text(
+                  'Premium Garments Accessories',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
-              ),
-            ],
+                const SizedBox(height: 30),
+
+                // Tabs
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFF2C5530),
+                    ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.grey[700],
+                    indicatorSize: TabBarIndicatorSize.tab, // 👈 important line
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                    tabs: const [
+                      Tab(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Text('Login'),
+                        ),
+                      ),
+                      Tab(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Text('Sign Up'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+                if (authState.error != null)
+                  Text(authState.error!, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 10),
+
+                 SizedBox(
+                   height: 400,
+                   child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildLoginForm(),
+                        _buildSignupForm(),
+                      ],
+                    ),
+                 ),
+
+              ],
+            ),
           ),
         ),
       ),
@@ -327,5 +336,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
       ),
     );
+  }
+
+  void getSavedValues() async{
+    var user=await DashboardHelper.getString('user');
+    var pass=await DashboardHelper.getString('pass');
+    debugPrint('Previous user ${user}');
+    debugPrint('Previous pass ${pass}');
+    if(user!=null&&pass!=null){
+      setState(() {
+        _loginEmailController.text=user;
+        _loginPasswordController.text=pass;
+      });
+    }
   }
 }

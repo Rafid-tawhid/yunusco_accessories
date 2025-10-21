@@ -1,78 +1,86 @@
-// models/costing_model.dart
-class CostingItem {
-  final String id;
-  final String category;
-  final String productName;
-  final String size;
-  final int quantity;
-  final double unitPrice;
-  final double totalPrice;
-  final String description;
-  final DateTime createdAt;
-  final String? imageUrl;
+class CostingItems {
+  CostingItems({
+      num? hMItemPriceId, 
+      String? itemRef, 
+      String? dimension, 
+      dynamic part, 
+      num? price, 
+      bool? active, 
+      String? remarks, 
+      num? uom, 
+      String? uomName,}){
+    _hMItemPriceId = hMItemPriceId;
+    _itemRef = itemRef;
+    _dimension = dimension;
+    _part = part;
+    _price = price;
+    _active = active;
+    _remarks = remarks;
+    _uom = uom;
+    _uomName = uomName;
+}
 
-  CostingItem({
-    required this.id,
-    required this.category,
-    required this.productName,
-    required this.size,
-    required this.quantity,
-    required this.unitPrice,
-    required this.totalPrice,
-    required this.description,
-    required this.createdAt,
-    this.imageUrl,
-  });
+  CostingItems.fromJson(dynamic json) {
+    _hMItemPriceId = json['HMItemPriceId'];
+    _itemRef = json['ItemRef'];
+    _dimension = json['Dimension'];
+    _part = json['Part'];
+    _price = json['Price'];
+    _active = json['Active'];
+    _remarks = json['Remarks'];
+    _uom = json['Uom'];
+    _uomName = json['UomName'];
+  }
+  num? _hMItemPriceId;
+  String? _itemRef;
+  String? _dimension;
+  dynamic _part;
+  num? _price;
+  bool? _active;
+  String? _remarks;
+  num? _uom;
+  String? _uomName;
+CostingItems copyWith({  num? hMItemPriceId,
+  String? itemRef,
+  String? dimension,
+  dynamic part,
+  num? price,
+  bool? active,
+  String? remarks,
+  num? uom,
+  String? uomName,
+}) => CostingItems(  hMItemPriceId: hMItemPriceId ?? _hMItemPriceId,
+  itemRef: itemRef ?? _itemRef,
+  dimension: dimension ?? _dimension,
+  part: part ?? _part,
+  price: price ?? _price,
+  active: active ?? _active,
+  remarks: remarks ?? _remarks,
+  uom: uom ?? _uom,
+  uomName: uomName ?? _uomName,
+);
+  num? get hMItemPriceId => _hMItemPriceId;
+  String? get itemRef => _itemRef;
+  String? get dimension => _dimension;
+  dynamic get part => _part;
+  num? get price => _price;
+  bool? get active => _active;
+  String? get remarks => _remarks;
+  num? get uom => _uom;
+  String? get uomName => _uomName;
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'category': category,
-      'productName': productName,
-      'size': size,
-      'quantity': quantity,
-      'unitPrice': unitPrice,
-      'totalPrice': totalPrice,
-      'description': description,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'imageUrl': imageUrl,
-    };
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{};
+    map['HMItemPriceId'] = _hMItemPriceId;
+    map['ItemRef'] = _itemRef;
+    map['Dimension'] = _dimension;
+    map['Part'] = _part;
+    map['Price'] = _price;
+    map['Active'] = _active;
+    map['Remarks'] = _remarks;
+    map['Uom'] = _uom;
+    map['UomName'] = _uomName;
+    return map;
   }
 
-  factory CostingItem.fromMap(Map<String, dynamic> map) {
-    return CostingItem(
-      id: map['id'] ?? '',
-      category: map['category'] ?? '',
-      productName: map['productName'] ?? '',
-      size: map['size'] ?? '',
-      quantity: map['quantity']?.toInt() ?? 0,
-      unitPrice: map['unitPrice']?.toDouble() ?? 0.0,
-      totalPrice: map['totalPrice']?.toDouble() ?? 0.0,
-      description: map['description'] ?? '',
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
-      imageUrl: map['imageUrl'],
-    );
-  }
-
-  CostingItem copyWith({
-    String? category,
-    String? productName,
-    String? size,
-    int? quantity,
-    double? unitPrice,
-    String? description,
-  }) {
-    return CostingItem(
-      id: id,
-      category: category ?? this.category,
-      productName: productName ?? this.productName,
-      size: size ?? this.size,
-      quantity: quantity ?? this.quantity,
-      unitPrice: unitPrice ?? this.unitPrice,
-      totalPrice: (quantity ?? this.quantity) * (unitPrice ?? this.unitPrice),
-      description: description ?? this.description,
-      createdAt: createdAt,
-      imageUrl: imageUrl,
-    );
-  }
 }
