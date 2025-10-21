@@ -223,8 +223,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 12),
 
                     Consumer(builder: (context, ref, _) {
-                      final costingAsync =
-                      ref.watch(costingItemsProvider(selectedItem!['ItemRef']));
+                      final costingAsync = ref.watch(costingItemsProvider(selectedItem!['ItemRef']));
 
                       return costingAsync.when(
                         data: (costingList) {
