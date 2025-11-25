@@ -1,6 +1,7 @@
 // screens/add_garment_accessories_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yunusco_accessories/helper_class/helper_class.dart';
 import 'package:yunusco_accessories/screens/show_costing_items.dart';
 
 import '../models/acessories_model.dart';
@@ -144,6 +145,7 @@ class _AddGarmentAccessoriesScreenState extends ConsumerState<AddGarmentAccessor
         supplierCode: _supplierCodeController.text,
         description: _descriptionController.text,
         usage: _usageController.text,
+        status: DashboardHelper.reviewStatus,
         careInstructions: _careInstructionsController.text,
         countryOfOrigin: _countryOfOriginController.text,
         qualityGrade: _qualityGradeController.text,

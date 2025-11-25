@@ -4,6 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardHelper {
 
+  static String reviewStatus="Review";
+  static String modifyStatus="Modify";
+  static String confirmStatus="Confirm";
+
   static saveString(String key,String value) async {
     SharedPreferences pref=await SharedPreferences.getInstance();
     pref.setString(key, value);

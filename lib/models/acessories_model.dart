@@ -22,6 +22,7 @@ class GarmentAccessory {
   final String supplierCode;
   final String description;
   final String usage;
+  final String status;
   final String careInstructions;
   final String countryOfOrigin;
   final String qualityGrade;
@@ -47,6 +48,7 @@ class GarmentAccessory {
     required this.brand,
     required this.unit,
     required this.price,
+    required this.status,
     required this.quantity,
     required this.supplier,
     required this.supplierCode,
@@ -67,6 +69,7 @@ class GarmentAccessory {
       'material': material,
       'composition': composition,
       'size': size,
+      'status': status,
       'dimensions': dimensions,
       'color': color,
       'weight': weight,
@@ -98,6 +101,7 @@ class GarmentAccessory {
       id: json['id'] as String,
       name: json['name'] as String,
       type: json['type'] as String,
+      status: json['status'] as String,
       material: json['material'] as String? ?? '',
       composition: json['composition'] as String? ?? '',
       size: json['size'] as String? ?? '',

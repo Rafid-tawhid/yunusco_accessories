@@ -1,10 +1,10 @@
 // screens/view_accessories_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yunusco_accessories/helper_class/helper_class.dart';
 
 import '../models/acessories_model.dart';
 import '../riverpod/costing_provider.dart';
-
 
 class ViewAccessoriesScreen extends ConsumerWidget {
   const ViewAccessoriesScreen({super.key});
@@ -80,38 +80,49 @@ class ViewAccessoriesScreen extends ConsumerWidget {
             );
           }
 
-          return _buildAccessoriesList(accessories);
+          return _buildAccessoriesList(accessories, ref,context);
         },
       ),
     );
   }
 
-  Widget _buildAccessoriesList(List<GarmentAccessory> accessories) {
+  Widget _buildAccessoriesList(List<GarmentAccessory> accessories, WidgetRef ref,BuildContext context) {
     return ListView.builder(
       itemCount: accessories.length,
       itemBuilder: (context, index) {
         final accessory = accessories[index];
-        return _buildAccessoryCard(accessory);
+        return _buildAccessoryCard(accessory, ref,context);
       },
     );
   }
 
-  Widget _buildAccessoryCard(GarmentAccessory accessory) {
+  Widget _buildAccessoryCard(GarmentAccessory accessory, WidgetRef ref,BuildContext context) {
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 2,
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade100,
+          backgroundColor: _getStatusColor(accessory.status).withOpacity(0.2),
           child: Text(
             accessory.name.substring(0, 1).toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: _getStatusColor(accessory.status),
+            ),
           ),
         ),
-        title: Text(
-          accessory.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                accessory.name,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildStatusChip(accessory.status),
+          ],
         ),
         subtitle: Text(
           '${accessory.type} • ${accessory.material} • \$${accessory.price}',
@@ -127,6 +138,19 @@ class ViewAccessoriesScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Status Section
+                _buildInfoSection('Status Information', [
+                  _buildInfoRow('Status', accessory.status),
+                  _buildStatusInfo(accessory.status),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // Price Update Section
+                _buildPriceUpdateSection(accessory, ref,context),
+
+                const SizedBox(height: 16),
+
                 // Basic Information
                 _buildInfoSection('Basic Information', [
                   _buildInfoRow('Type', accessory.type),
@@ -151,7 +175,7 @@ class ViewAccessoriesScreen extends ConsumerWidget {
 
                 // Pricing & Supplier
                 _buildInfoSection('Pricing & Supplier', [
-                  _buildInfoRow('Price', '\$${accessory.price}'),
+                  _buildInfoRow('Current Price', '\$${accessory.price}'),
                   _buildInfoRow('Quantity', '${accessory.quantity}'),
                   _buildInfoRow('Unit', accessory.unit),
                   _buildInfoRow('Supplier', accessory.supplier),
@@ -188,6 +212,262 @@ class ViewAccessoriesScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildStatusChip(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getStatusColor(status).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _getStatusColor(status),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: _getStatusColor(status),
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusInfo(String status) {
+    String statusInfo = '';
+    Color statusColor = Colors.grey;
+
+    switch (status.toLowerCase()) {
+      case 'active':
+        statusInfo = 'This accessory is currently available and in stock';
+        statusColor = Colors.green;
+        break;
+      case 'out of stock':
+        statusInfo = 'This accessory is currently out of stock';
+        statusColor = Colors.red;
+        break;
+      case 'discontinued':
+        statusInfo = 'This accessory has been discontinued';
+        statusColor = Colors.orange;
+        break;
+      case 'low stock':
+        statusInfo = 'This accessory is running low on stock';
+        statusColor = Colors.orange;
+        break;
+      default:
+        statusInfo = 'Status information not available';
+        statusColor = Colors.grey;
+    }
+
+    return Row(
+      children: [
+        Icon(
+          Icons.info_outline,
+          color: statusColor,
+          size: 16,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            statusInfo,
+            style: TextStyle(
+              color: statusColor,
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceUpdateSection(GarmentAccessory accessory, WidgetRef ref,BuildContext context) {
+    final TextEditingController priceController = TextEditingController(
+      text: accessory.price.toString(),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Update Price',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'New Price',
+                    prefixIcon: Icon(Icons.attach_money),
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () {
+                  _updatePrice(context, accessory, priceController.text, ref);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                child: const Text(
+                  'Update',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Current Price: \$${accessory.price}',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updatePrice(BuildContext context, GarmentAccessory accessory, String newPrice, WidgetRef ref) {
+    final double? parsedPrice = double.tryParse(newPrice);
+
+    if (parsedPrice == null || parsedPrice <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid price'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update Price'),
+        content: Text('Are you sure you want to update the price from \$${accessory.price} to \$$parsedPrice?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+
+              // Show loading
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Updating price...'),
+                  backgroundColor: Colors.blue.shade700,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+
+              try {
+                // Create updated accessory
+                final updatedAccessory = GarmentAccessory(
+                  id: accessory.id,
+                  name: accessory.name,
+                  type: accessory.type,
+                  material: accessory.material,
+                  composition: accessory.composition,
+                  size: accessory.size,
+                  dimensions: accessory.dimensions,
+                  color: accessory.color,
+                  weight: accessory.weight,
+                  thickness: accessory.thickness,
+                  length: accessory.length,
+                  width: accessory.width,
+                  diameter: accessory.diameter,
+                  pattern: accessory.pattern,
+                  finish: accessory.finish,
+                  brand: accessory.brand,
+                  unit: accessory.unit,
+                  price: parsedPrice,
+                  quantity: accessory.quantity,
+                  supplier: accessory.supplier,
+                  supplierCode: accessory.supplierCode,
+                  description: accessory.description,
+                  usage: accessory.usage,
+                  careInstructions: accessory.careInstructions,
+                  countryOfOrigin: accessory.countryOfOrigin,
+                  qualityGrade: accessory.qualityGrade,
+                  isWashable: accessory.isWashable,
+                  isEcoFriendly: accessory.isEcoFriendly,
+                  status: DashboardHelper.modifyStatus, // Keep the same status
+                );
+
+                // Update in Firebase
+                await ref.read(accessorySaveProvider(updatedAccessory).future);
+
+                // Refresh the list
+                ref.invalidate(accessoriesListProvider);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Price updated to \$$parsedPrice'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (error) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error updating price: $error'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green;
+      case 'out of stock':
+        return Colors.red;
+      case 'discontinued':
+        return Colors.orange;
+      case 'low stock':
+        return Colors.orange;
+      case 'pending':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _buildInfoSection(String title, List<Widget> children) {
