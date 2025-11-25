@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
 import 'package:yunusco_accessories/riverpod/auth_provider.dart';
+import 'package:yunusco_accessories/screens/create_costing_screen.dart';
 import 'package:yunusco_accessories/screens/dashboard_screen.dart';
 
 
@@ -76,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
          DashboardHelper.saveString('pass', _loginPasswordController.text.trim());
          Navigator.push(
            context,
-           MaterialPageRoute(builder: (_) => const DashboardScreen()),
+           MaterialPageRoute(builder: (_) => const SimpleDashboardScreen()),
          );
 
        }

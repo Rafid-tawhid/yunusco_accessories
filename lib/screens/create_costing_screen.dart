@@ -1,0 +1,397 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
+import '../riverpod/data_provider.dart';
+import '../models/costing_items.dart';
+import 'costing_price_screen.dart';
+
+class CostingScreen extends ConsumerStatefulWidget {
+  const CostingScreen({super.key});
+
+  @override
+  ConsumerState<CostingScreen> createState() => _CostingScreenState();
+}
+
+class _CostingScreenState extends ConsumerState<CostingScreen> {
+  Map<String, dynamic>? selectedRbo;
+  Map<String, dynamic>? selectedItem;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rboAsync = ref.watch(rboProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF2C5530),
+        elevation: 0,
+      ),
+      backgroundColor: Colors.grey[100],
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: rboAsync.when(
+          data: (rboList) {
+            if (rboList.isEmpty) {
+              return const Center(child: Text('No RBO data found.'));
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Select RBO",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // RBO Dropdown
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton2<Map<String, dynamic>>(
+                      isExpanded: true,
+                      hint: const Text("Choose an RBO"),
+                      value: selectedRbo,
+                      items: rboList.map((rbo) {
+                        return DropdownMenuItem<Map<String, dynamic>>(
+                          value: rbo,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: const Color(0xFF2C5530),
+                                child: Text(
+                                  rbo['RboId'].toString(),
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(rbo['RboName'] ?? '',
+                                  style: const TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedRbo = value;
+                          selectedItem = null;
+                          _searchController.clear();
+                        });
+                      },
+                      buttonStyleData: ButtonStyleData(
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade400),
+                          color: Colors.white,
+                        ),
+                      ),
+                      dropdownStyleData: DropdownStyleData(
+                        maxHeight: 300,
+                        offset: const Offset(0, 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  if (selectedRbo != null) ...[
+                    const Text(
+                      "Select Item",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final itemAsync =
+                        ref.watch(itemsProvider(selectedRbo!['RboId']));
+
+                        return itemAsync.when(
+                          data: (itemList) {
+                            if (itemList.isEmpty) {
+                              return const Text("No items found for this RBO.");
+                            }
+
+                            return DropdownButtonHideUnderline(
+                              child: DropdownButton2<Map<String, dynamic>>(
+                                isExpanded: true,
+                                hint: const Text("Choose an Item"),
+                                value: selectedItem,
+                                items: itemList.map((item) {
+                                  return DropdownMenuItem<Map<String, dynamic>>(
+                                    value: item,
+                                    child: Text(
+                                      item['ItemRef'] ?? '',
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedItem = value;
+                                  });
+                                },
+                                buttonStyleData: ButtonStyleData(
+                                  height: 50,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey.shade400),
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                dropdownStyleData: DropdownStyleData(
+                                  maxHeight: 300,
+                                  offset: const Offset(0, 4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                dropdownSearchData: DropdownSearchData(
+                                  searchController: _searchController,
+                                  searchInnerWidgetHeight: 50,
+                                  searchInnerWidget: Container(
+                                    height: 50,
+                                    padding: const EdgeInsets.all(8),
+                                    child: TextFormField(
+                                      controller: _searchController,
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 8,
+                                        ),
+                                        hintText: 'Search item...',
+                                        hintStyle: const TextStyle(fontSize: 14),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  searchMatchFn: (item, searchValue) {
+                                    return item.value!['ItemRef']
+                                        .toString()
+                                        .toLowerCase()
+                                        .contains(searchValue.toLowerCase());
+                                  },
+                                ),
+                                onMenuStateChange: (isOpen) {
+                                  if (!isOpen) {
+                                    _searchController.clear();
+                                    FocusScope.of(context).unfocus();
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                          loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                          error: (error, _) =>
+                              Text('Error loading items: $error'),
+                        );
+                      },
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // ✅ COSTING ITEMS SECTION
+                  if (selectedItem != null) ...[
+                    const Text(
+                      "Costing Items",
+                      style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Consumer(builder: (context, ref, _) {
+                      final costingAsync = ref.watch(costingItemsProvider(selectedItem!['ItemRef']));
+
+                      return costingAsync.when(
+                        data: (costingList) {
+                          if (costingList.isEmpty) {
+                            return const Text("No costing items found.");
+                          }
+
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: costingList.length,
+                            itemBuilder: (context, index) {
+                              final item = costingList[index];
+                              return GestureDetector(
+                                onTap: (){
+                                  Navigator.push(context, MaterialPageRoute(builder: (context)=>AddGarmentAccessoriesScreen()));
+                                },
+                                child: Card(
+                                  color: Colors.white,
+                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Main item reference
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.itemRef ?? 'No Reference',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: item.active == true ? Colors.green[50] : Colors.red[50],
+                                                borderRadius: BorderRadius.circular(16),
+                                                border: Border.all(
+                                                  color: item.active == true ? Colors.green : Colors.red,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                item.active == true ? 'Active' : 'Inactive',
+                                                style: TextStyle(
+                                                  color: item.active == true ? Colors.green : Colors.red,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 12),
+
+                                        // Price and UOM in a row
+                                        Row(
+                                          children: [
+                                            _buildInfoItem('Price', '${item.price ?? '-'}'),
+                                            const SizedBox(width: 16),
+                                            _buildInfoItem('UOM', '${item.uomName ?? '-'} (${item.uom ?? '-'})'),
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 8),
+
+                                        // Dimension and Part in a row
+                                        Row(
+                                          children: [
+                                            if (item.dimension != null && item.dimension!.isNotEmpty)
+                                              _buildInfoItem('Dimension', item.dimension!),
+                                            if (item.dimension != null && item.dimension!.isNotEmpty)
+                                              const SizedBox(width: 16),
+                                            if (item.part != null)
+                                              _buildInfoItem('Part', item.part.toString()),
+                                          ],
+                                        ),
+
+                                        // ID
+                                        if (item.hMItemPriceId != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: _buildInfoItem('ID', item.hMItemPriceId.toString()),
+                                          ),
+
+                                        // Remarks (if available)
+                                        if (item.remarks != null && item.remarks!.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  'Remarks:',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  item.remarks!,
+                                                  style: const TextStyle(fontSize: 14),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        loading: () => const Center(
+                            child: CircularProgressIndicator()),
+                        error: (error, _) =>
+                            Text('Error loading costing items: $error'),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+              child: Text('Error: $error',
+                  style: const TextStyle(color: Colors.red))),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
