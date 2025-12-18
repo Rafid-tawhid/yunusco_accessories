@@ -1,4 +1,5 @@
 // screens/add_garment_accessories_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
@@ -122,7 +123,7 @@ class _AddGarmentAccessoriesScreenState extends ConsumerState<AddGarmentAccessor
   Future<void> _addAccessory() async {
     if (_formKey.currentState!.validate()) {
       final accessory = GarmentAccessory(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '',
         name: _nameController.text,
         type: _typeController.text,
         material: _materialController.text,
@@ -151,6 +152,8 @@ class _AddGarmentAccessoriesScreenState extends ConsumerState<AddGarmentAccessor
         qualityGrade: _qualityGradeController.text,
         isWashable: _isWashable,
         isEcoFriendly: _isEcoFriendly,
+        createdDate: DateTime.now().toString(),
+        modifiedDate: DateTime.now().toString(),
       );
 
       setState(() {
@@ -198,7 +201,7 @@ class _AddGarmentAccessoriesScreenState extends ConsumerState<AddGarmentAccessor
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Add Garment Accessories'),
+        title: const Text('Costing Garment Accessories'),
         backgroundColor: Colors.blue.shade800,
         foregroundColor: Colors.white,
         actions: [

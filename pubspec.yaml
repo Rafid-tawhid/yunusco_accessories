@@ -43,6 +43,9 @@ dependencies:
   dio: ^5.9.0
   dropdown_button2: ^2.3.9
   shared_preferences: ^2.5.3
+  mobile_scanner: ^7.1.3
+  image_picker: ^0.8.7
+  permission_handler: ^12.0.0+1
 
 dev_dependencies:
   flutter_test:

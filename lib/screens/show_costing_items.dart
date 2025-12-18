@@ -1,6 +1,8 @@
 // screens/view_accessories_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yunusco_accessories/firebase/auth_service.dart';
+import 'package:yunusco_accessories/helper_class/api_service_class.dart';
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
 
 import '../models/acessories_model.dart';
@@ -144,10 +146,7 @@ class ViewAccessoriesScreen extends ConsumerWidget {
                   _buildStatusInfo(accessory.status),
                 ]),
 
-                const SizedBox(height: 16),
 
-                // Price Update Section
-                _buildPriceUpdateSection(accessory, ref,context),
 
                 const SizedBox(height: 16),
 
@@ -206,6 +205,10 @@ class ViewAccessoriesScreen extends ConsumerWidget {
                     ),
                   ]),
                 ],
+                const SizedBox(height: 16),
+                // Price Update Section
+                _buildPriceUpdateSection(accessory, ref,context),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -422,11 +425,14 @@ class ViewAccessoriesScreen extends ConsumerWidget {
                   qualityGrade: accessory.qualityGrade,
                   isWashable: accessory.isWashable,
                   isEcoFriendly: accessory.isEcoFriendly,
+                  createdDate: accessory.createdDate,
+                  modifiedDate: DateTime.now().toString(),
                   status: DashboardHelper.modifyStatus, // Keep the same status
                 );
 
                 // Update in Firebase
-                await ref.read(accessorySaveProvider(updatedAccessory).future);
+                FirebaseService apiservice=FirebaseService();
+                apiservice.updateAccessory(updatedAccessory);
 
                 // Refresh the list
                 ref.invalidate(accessoriesListProvider);

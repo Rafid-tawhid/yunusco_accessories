@@ -9,7 +9,16 @@ class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> saveAccessory(GarmentAccessory accessory) async {
-    await _firestore.collection('accessories').add(accessory.toMap());
+    DocumentReference docRef = FirebaseFirestore.instance.collection('accessories').doc();
+    var data= accessory.copyWith(
+      id: docRef.id
+    );
+    await docRef.set(data.toMap());
+  }
+
+  Future<void> updateAccessory(GarmentAccessory accessory) async {
+
+    await _firestore.doc('accessories').update(accessory.toMap());
   }
 
   // In your firebase_service.dart
