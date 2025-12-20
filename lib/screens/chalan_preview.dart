@@ -555,13 +555,13 @@ class ChalanPreviewScreen extends StatelessWidget {
 
     final text = result.text.replaceAll('\n', ' ');
 
-    debugPrint('Available text ${text}');
+    debugPrint('Available text $text');
 
     /// Matches: DC/1234, DC/AB-234, DC/2023/56
     final regex = RegExp(r'DC[A-Z0-9]*\/[0-9]+', caseSensitive: false);
     final match = regex.firstMatch(text);
 
-    return match?.group(0);
+    return match?.group(0)??text;
   }
 
 
