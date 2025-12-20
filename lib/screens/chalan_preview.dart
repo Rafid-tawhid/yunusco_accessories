@@ -1,6 +1,11 @@
 // ChalanPreviewScreen remains the same as in previous code...
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:image/image.dart' as img;
 class ChalanPreviewScreen extends StatelessWidget {
   final String qrData;
   final Map<String, dynamic> parsedData;
@@ -73,6 +78,9 @@ class ChalanPreviewScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
+
+                    //
+
 
                     if (imageFiles.isNotEmpty)
                       GridView.builder(
@@ -249,8 +257,40 @@ class ChalanPreviewScreen extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      _submitChalan(context);
+                    onPressed: () async {
+                      //_submitChalan(context);
+                      var data= await detectDCFromFirstImage();
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green),
+                              SizedBox(width: 8),
+                              Text('Success'),
+                            ],
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Chalan submitted successfully!'),
+                              const SizedBox(height: 8),
+                              Text('Detected Code : $data')
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.pop(context);
+                              },
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+
                     },
                     icon: const Icon(Icons.check_circle),
                     label: const Text(
@@ -465,4 +505,65 @@ class ChalanPreviewScreen extends StatelessWidget {
       );
     });
   }
+
+
+
+  Future<String?> detectDCFromFirstImage() async {
+    if (imageFiles.isEmpty)
+      'None';
+    final firstImage = imageFiles.first;
+
+    final croppedImage = await cropTopRight(firstImage);
+    final dcNumber = await extractDCNumber(croppedImage);
+
+    debugPrint('Detected DC Number: $dcNumber');
+
+    return dcNumber;
+  }
+
+
+
+
+  Future<File> cropTopRight(File file) async {
+    final bytes = await file.readAsBytes();
+    final image = img.decodeImage(bytes)!;
+
+    final cropWidth = (image.width * 0.4).toInt();
+    final cropHeight = (image.height * 0.3).toInt();
+
+    final cropped = img.copyCrop(
+      image,
+      x: image.width - cropWidth,
+      y: 0,
+      width: cropWidth,
+      height: cropHeight,
+    );
+
+    final croppedFile = File('${file.path}_crop.jpg');
+    await croppedFile.writeAsBytes(img.encodeJpg(cropped));
+
+    return croppedFile;
+  }
+
+
+  Future<String?> extractDCNumber(File imageFile) async {
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    final inputImage = InputImage.fromFile(imageFile);
+
+    final result = await recognizer.processImage(inputImage);
+    recognizer.close();
+
+    final text = result.text.replaceAll('\n', ' ');
+
+    debugPrint('Available text ${text}');
+
+    /// Matches: DC/1234, DC/AB-234, DC/2023/56
+    final regex = RegExp(r'DC[A-Z0-9]*\/[0-9]+', caseSensitive: false);
+    final match = regex.firstMatch(text);
+
+    return match?.group(0);
+  }
+
+
+
 }

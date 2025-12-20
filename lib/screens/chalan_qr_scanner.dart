@@ -222,7 +222,7 @@ class _ChalanScanScreenState extends State<ChalanScanScreen> {
                 ),
               ],
             ),
-          IconButton(
+            IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
               showDialog(
@@ -247,6 +247,21 @@ class _ChalanScanScreenState extends State<ChalanScanScreen> {
                   ],
                 ),
               );
+            },
+          ),
+            IconButton(
+            icon: const Icon(Icons.navigate_next),
+            onPressed: () {
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (_) => ChalanPreviewScreen(
+              //       qrData: 'Hello..',
+              //       parsedData: {},
+              //       imageFiles: [File('assets/images/doc.jpg')],
+              //     ),
+              //   ),
+              // );
             },
           ),
         ],
