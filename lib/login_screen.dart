@@ -71,8 +71,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     try {
       // Call your Riverpod provider API
        var response= await ref.read(authProvider.notifier).loginUser(email, password);
-       debugPrint('CURRENT RESPONSE ${response}');
-       if(true){
+       debugPrint('CURRENT RESPONSE $response');
+       if(response){
          DashboardHelper.saveString('user', _loginEmailController.text.trim());
          DashboardHelper.saveString('pass', _loginPasswordController.text.trim());
          Navigator.push(
@@ -88,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
-  Future<void> _signup() async {
+    Future<void> _signup() async {
     final email = _signupEmailController.text.trim();
     final pass = _signupPasswordController.text.trim();
     final confirm = _signupConfirmPasswordController.text.trim();

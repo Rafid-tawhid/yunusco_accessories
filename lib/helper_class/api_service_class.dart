@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -11,7 +15,8 @@ class ApiService {
   late Dio _dio;
 
   /// Base URL for all API calls
-  static const String baseUrl = 'http://192.168.5.4:8030/';
+  // static const String baseUrl = 'http://192.168.5.4:8030/';
+  static const String baseUrl = 'http://182.160.122.108:1010/';
   String? _sessionCookie; // store ASP.NET session cookie
 
   void _initDio() {
@@ -140,5 +145,114 @@ class ApiService {
   void clearCookie() {
     _sessionCookie = null;
     debugPrint('🚪 Session cleared');
+  }
+
+
+  static Future<dynamic> uploadChallanWithQR({
+    required num userId,
+    required String portal,
+    required String challanId,
+    required File imageFile,
+    required bool isIdentified,
+    required double qRMatchingPercentage
+  }) async {
+
+    // First, make sure baseUrl is set
+    String baseUrl = 'http://182.160.122.108:1010/'; // REPLACE WITH YOUR SERVER IP
+
+    debugPrint('🔍 Using baseUrl: $baseUrl');
+
+    // Remove any trailing slashes if they exist
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+    }
+
+    // Construct the full URL
+    final apiUrl = 'http://182.160.122.108:1010/DeliveryChallan/UPLOADCHALLANRECEVINGWITHQR';
+
+    debugPrint('📤 Starting upload...');
+    debugPrint('🔗 FULL API URL: $apiUrl');
+    debugPrint('📝 Params: userId=$userId, portal=$portal, challanId=$challanId');
+    debugPrint('📸 File path: ${imageFile.path}');
+
+    try {
+      // Test if we can reach the server first
+      debugPrint('🔍 Testing server connection...');
+      try {
+        var testResponse = await http.get(Uri.parse('$baseUrl/'));
+        debugPrint('✅ Server reachable: ${testResponse.statusCode}');
+      } catch (e) {
+        debugPrint('❌ Cannot reach server: $e');
+        debugPrint('💡 Tip: Make sure server is running and URL is correct');
+      }
+
+      var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
+
+      // Add headers if needed
+      request.headers['Accept'] = 'application/json';
+
+      // Add fields
+      request.fields['userId'] = userId.toString();
+      request.fields['portal'] = portal;
+      request.fields['challanId'] = challanId.toString();
+      request.fields['isIdentified'] = isIdentified.toString();
+      request.fields['QRMatchingPercentage'] = qRMatchingPercentage.toStringAsFixed(2);
+      debugPrint('📦 Request fields: ${request.fields}');
+
+      // Add image file
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          imageFile.path,
+          filename: 'challan_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ),
+      );
+
+      debugPrint('🚀 Sending request to: $apiUrl');
+      var response = await request.send();
+
+      debugPrint('📥 Response status: ${response.statusCode}');
+
+      var responseData = await response.stream.bytesToString();
+      debugPrint('📄 Response length: ${responseData.length} characters');
+
+      // Check if response is HTML error page
+      if (responseData.contains('<!DOCTYPE html>') || responseData.contains('<html>')) {
+        debugPrint('❌ Received HTML error page instead of JSON');
+        debugPrint('💡 This means the API endpoint does not exist or URL is wrong');
+        debugPrint('💡 Please check:');
+        debugPrint('   1. Is the server running?');
+        debugPrint('   2. Is the API endpoint path correct?');
+        debugPrint('   3. Can you access $apiUrl from browser?');
+      }
+
+      if (response.statusCode == 200) {
+        try {
+          var jsonResponse = jsonDecode(responseData);
+          debugPrint('✅ Success! Response: $jsonResponse');
+
+          return jsonResponse;
+        } catch (e) {
+          debugPrint('⚠️ Status 200 but JSON parse failed: $e');
+          return e.toString();
+        }
+      } else {
+        debugPrint('❌ Upload failed with status ${response.statusCode}');
+
+        // Try to extract error message
+        String errorMessage = 'Upload failed with status ${response.statusCode}';
+        if (responseData.contains('The resource cannot be found')) {
+          errorMessage = 'API endpoint not found. Check URL: $apiUrl';
+        }
+
+        return response;
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('❌ Exception occurred: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      return e;
+    }
   }
 }

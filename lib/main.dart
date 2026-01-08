@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'firebase_options.dart';
+import 'package:yunusco_accessories/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'firebase_options.dart';
 
 Future<void> main() async {
   try {
@@ -13,6 +14,8 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('✅ SUCCESS: Firebase connected!');
+
+
   } catch (e) {
     print('❌ ERROR: $e');
   }
