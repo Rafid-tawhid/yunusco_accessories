@@ -1,7 +1,7 @@
 // screens/simple_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:yunusco_accessories/screens/show_costing_items.dart';
-
+import 'document_submit.dart';
 import 'chalan_qr_scanner.dart';
 import 'create_costing_screen.dart';
 
@@ -53,6 +53,15 @@ class SimpleDashboardScreen extends StatelessWidget {
               color: Colors.purple,
               route: '/qr_scanner',
             ),
+            const SizedBox(height: 12),
+            _buildModuleCard(
+              context: context,
+              title: 'Document Submit',
+              description: 'Updated Info Send in watsapp',
+              icon: Icons.send_and_archive,
+              color: Colors.green,
+              route: '/doc_send',
+            ),
           ],
         ),
       ),
@@ -78,16 +87,23 @@ class SimpleDashboardScreen extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => const CostingScreen()),
             );
-          } else if (route == '/accessories') {
+          }
+          else if (route == '/accessories') {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ViewAccessoriesScreen()),
             );
           }
-           else if (route == '/qr_scanner') {
+          else if (route == '/qr_scanner') {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ChalanScanScreen()),
+            );
+          }
+          else if (route == '/doc_send') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) =>  DocumentSubmitScreen()),
             );
           }
         },
