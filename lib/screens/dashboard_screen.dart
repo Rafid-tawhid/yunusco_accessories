@@ -11,6 +11,8 @@ class SimpleDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+
       appBar: AppBar(
         title: const Text('Accessories Dashboard'),
         backgroundColor: Colors.blue.shade800,
@@ -67,6 +69,7 @@ class SimpleDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 4,
+      color: Colors.white,
       child: InkWell(
         onTap: () {
           // Navigate to respective screen
