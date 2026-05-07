@@ -23,13 +23,13 @@ class _DocumentSubmitScreenState extends State<DocumentSubmitScreen> {
     String phoneNumber = "8801682832598";
 
     String message = '''
-*Accessories Costing Details*
+    *Accessories Costing Details*
 
-📦 Item: $item
-🔢 Quantity: $quantity
-💰 Price: $price
-📝 Notes: $notes
-''';
+    📦 Item: $item
+    🔢 Quantity: $quantity
+    💰 Price: $price
+    📝 Notes: $notes
+    ''';
 
     final Uri whatsappUrl = Uri.parse(
       "https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}",
