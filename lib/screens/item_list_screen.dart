@@ -62,7 +62,7 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: const Size.fromHeight(50),
           child: Column(
             children: [
               // Search bar
@@ -93,8 +93,6 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -178,7 +176,7 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
       },
       child: ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8,horizontal: 8),
         itemCount: filteredItems.length,
         itemBuilder: (context, index) {
           final item = filteredItems[index];
@@ -297,7 +295,7 @@ class _ItemDetailsSheet extends StatelessWidget {
                       children: [
                         _buildDetailRow('Item Reference', item.itemRef ?? 'N/A'),
                         _buildDivider(),
-                        _buildDetailRow('Product Name', item.productName ?? 'N/A'),
+                        _buildDetailRow('Product Name', '${item.productName}' ?? 'N/A'),
                         _buildDivider(),
                         _buildDetailRow('Item Name', item.itemName ?? 'N/A'),
                         _buildDivider(),
