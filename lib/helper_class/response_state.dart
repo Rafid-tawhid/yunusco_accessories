@@ -21,3 +21,35 @@ class ResponseState {
     );
   }
 }
+
+
+class ApiResponse {
+  final bool isSuccess;
+  final dynamic data;
+  final String? message;
+  final int? statusCode;
+
+  ApiResponse({
+    required this.isSuccess,
+    this.data,
+    this.message,
+    this.statusCode,
+  });
+
+  factory ApiResponse.success({dynamic data, int? statusCode}) {
+    return ApiResponse(
+      isSuccess: true,
+      data: data,
+      statusCode: statusCode,
+    );
+  }
+
+  factory ApiResponse.error({String? message, int? statusCode, dynamic data}) {
+    return ApiResponse(
+      isSuccess: false,
+      message: message ?? 'An error occurred',
+      statusCode: statusCode,
+      data: data,
+    );
+  }
+}

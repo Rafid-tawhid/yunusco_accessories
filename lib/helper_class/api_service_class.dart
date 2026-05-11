@@ -4,6 +4,10 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:yunusco_accessories/helper_class/helper_class.dart';
+import 'package:yunusco_accessories/helper_class/user_data.dart';
+
+import '../models/user_model.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -73,27 +77,46 @@ class ApiService {
   }
 
   /// 🔹 Login API - stores session cookie
-  Future<bool> login(String username, String password) async {
+  Future<bool> loginUser(String email, String password) async {
     try {
-      final response = await _dio.post(
+      ApiService apiService = ApiService();
+
+      var response = await apiService.post(
         'Login/Login',
-        options: Options(headers: {'Content-Type': 'multipart/form-data'}),
-        data: FormData.fromMap({
-          'LoginName': username,
+        {
+          'LoginName': email,
           'Password': password,
-        }),
+        },
       );
+      if(response!=null){
+        // Get cookie
+        final cookies = response.headers['set-cookie'];
 
-      if (response.statusCode == 200) {
-        debugPrint('✅ Login Successful');
-        return true;
-      } else {
-        debugPrint('⚠️ Login Failed: ${response.statusCode}');
+        if (cookies != null && cookies.isNotEmpty) {
 
-        return false;
+          final sessionCookie = cookies.first;
+
+          debugPrint('COOKIE => $sessionCookie');
+
+          // Save cookie
+          await DashboardHelper.saveSessionCookie(
+            sessionCookie,
+          );
+        }
+
+        if (response.data['output'].toString() == "success") {
+
+          UserData.user = UserModel.fromJson(
+            response.data['rValue'],
+          );
+
+          return true;
+
+        }
       }
-    } on DioError catch (e) {
-      _handleError(e);
+      return false;
+
+    } catch (e) {
       return false;
     }
   }
@@ -101,7 +124,15 @@ class ApiService {
   /// GET Request
   Future<Response?> get(String endpoint, {Map<String, dynamic>? query}) async {
     try {
-      final response = await _dio.get(endpoint, queryParameters: query);
+      final cookie = await DashboardHelper.getSessionCookie();
+      final response = await _dio.get(
+          endpoint, queryParameters: query,
+          options: Options(
+            headers: {
+              'Cookie': cookie,
+            },
+          ),
+      );
       return response;
     } on DioError catch (e) {
       _handleError(e);
@@ -135,17 +166,7 @@ class ApiService {
     }
   }
 
-  /// Optional: Manually set cookie (if known)
-  void setCookie(String cookie) {
-    _sessionCookie = cookie;
-    debugPrint('🍪 Manually set cookie: $_sessionCookie');
-  }
 
-  /// Optional: Clear cookie on logout
-  void clearCookie() {
-    _sessionCookie = null;
-    debugPrint('🚪 Session cleared');
-  }
 
 
   static Future<dynamic> uploadChallanWithQR({

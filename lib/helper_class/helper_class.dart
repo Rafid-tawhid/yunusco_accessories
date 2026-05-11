@@ -8,21 +8,19 @@ import 'package:image/image.dart' as img;
 import 'package:flutter/foundation.dart';
 
 class DashboardHelper {
+  static String reviewStatus = "Review";
+  static String modifyStatus = "Modify";
+  static String confirmStatus = "Confirm";
 
-  static String reviewStatus="Review";
-  static String modifyStatus="Modify";
-  static String confirmStatus="Confirm";
-
-  static saveString(String key,String value) async {
-    SharedPreferences pref=await SharedPreferences.getInstance();
+  static saveString(String key, String value) async {
+    SharedPreferences pref = await SharedPreferences.getInstance();
     pref.setString(key, value);
   }
+
   static Future<String?> getString(String key) async {
-    SharedPreferences pref=await SharedPreferences.getInstance();
+    SharedPreferences pref = await SharedPreferences.getInstance();
     return pref.getString(key);
   }
-
-
 
   static Future<bool> hasAnyColorInFile(File file) async {
     final bytes = await file.readAsBytes();
@@ -60,7 +58,6 @@ class DashboardHelper {
     return colorRatio > 0.003; // 0.3%
   }
 
-
   static Future<File?> compressImage(File file, {int quality = 85}) async {
     try {
       final filePath = file.absolute.path;
@@ -70,7 +67,8 @@ class DashboardHelper {
 
       // Create output file path
       final lastSeparator = filePath.lastIndexOf(Platform.pathSeparator);
-      final newPath = '${filePath.substring(0, lastSeparator + 1)}compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final newPath =
+          '${filePath.substring(0, lastSeparator + 1)}compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       // Compress based on image type
       XFile? result;
@@ -97,8 +95,26 @@ class DashboardHelper {
     }
   }
 
+  static const String _cookieKey = 'session_cookie';
 
+  // Save
+  static Future<void> saveSessionCookie(String cookie) async {
+    final prefs = await SharedPreferences.getInstance();
 
+    await prefs.setString(_cookieKey, cookie);
+  }
 
+  // Get
+  static Future<String?> getSessionCookie() async {
+    final prefs = await SharedPreferences.getInstance();
 
+    return prefs.getString(_cookieKey);
+  }
+
+  // Clear
+  static Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove(_cookieKey);
+  }
 }

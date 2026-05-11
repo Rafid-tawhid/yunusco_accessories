@@ -4,6 +4,7 @@ import 'package:yunusco_accessories/screens/show_costing_items.dart';
 import 'document_submit.dart';
 import 'chalan_qr_scanner.dart';
 import 'create_costing_screen.dart';
+import 'item_list_screen.dart';
 
 class SimpleDashboardScreen extends StatelessWidget {
   const SimpleDashboardScreen({super.key});
@@ -83,10 +84,11 @@ class SimpleDashboardScreen extends StatelessWidget {
         onTap: () {
           // Navigate to respective screen
           if (route == '/costing') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CostingScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>ItemsListScreen()));
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(builder: (context) => const CostingScreen()),
+            // );
           }
           else if (route == '/accessories') {
             Navigator.push(
