@@ -54,7 +54,6 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
         foregroundColor: Colors.white,
         elevation: 2,
         actions: [
-          // Refresh button
           IconButton(
             onPressed: () => ref.invalidate(itemsListProvider),
             icon: const Icon(Icons.refresh),
@@ -65,7 +64,6 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
           preferredSize: const Size.fromHeight(50),
           child: Column(
             children: [
-              // Search bar
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Container(
@@ -107,12 +105,10 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
       List<ItemsModel> filteredItems,
       bool isLoading,
       ) {
-    // Show loading indicator
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Show error
     if (itemsAsync.hasError) {
       return Center(
         child: Column(
@@ -144,7 +140,6 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
       );
     }
 
-    // Show empty state
     if (filteredItems.isEmpty) {
       return Center(
         child: Column(
@@ -168,7 +163,6 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
       );
     }
 
-    // Show items list
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(itemsListProvider);
@@ -176,7 +170,7 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
       },
       child: ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(vertical: 8,horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         itemCount: filteredItems.length,
         itemBuilder: (context, index) {
           final item = filteredItems[index];
@@ -208,26 +202,18 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      enableDrag: true,
+      isDismissible: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.8,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) {
-          return _ItemDetailsSheet(
-            item: item,
-            scrollController: scrollController,
-          );
-        },
-      ),
+      builder: (context) {
+        return _ItemDetailsSheet(item: item);
+      },
     );
   }
 
   void _toggleFavorite(ItemsModel item) {
-    // TODO: Implement favorite functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Added ${item.displayName} to favorites'),
@@ -243,13 +229,9 @@ class _ItemsListScreenState extends ConsumerState<ItemsListScreen> {
 
 class _ItemDetailsSheet extends StatefulWidget {
   final ItemsModel item;
-  final ScrollController scrollController;
-  final Function(double? newPrice)? onPriceUpdated;
 
   const _ItemDetailsSheet({
     required this.item,
-    required this.scrollController,
-    this.onPriceUpdated,
   });
 
   @override
@@ -258,61 +240,100 @@ class _ItemDetailsSheet extends StatefulWidget {
 
 class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
   late final TextEditingController _priceController;
+  late final TextEditingController _commissionController;
+  late final TextEditingController _remarksController;
   final FocusNode _priceFocusNode = FocusNode();
-  bool _isUpdatingPrice = false;
+  final FocusNode _commissionFocusNode = FocusNode();
+  final FocusNode _remarksFocusNode = FocusNode();
+  bool _isUpdating = false;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _priceController = TextEditingController(
-      text: widget.item.basicPrice!.toStringAsFixed(2),
+      text: widget.item.basicPrice?.toStringAsFixed(2) ?? '',
+    );
+    _commissionController = TextEditingController(
+      text: '0',
+    );
+    _remarksController = TextEditingController(
+      text: '',
     );
   }
 
   @override
   void dispose() {
     _priceController.dispose();
+    _commissionController.dispose();
+    _remarksController.dispose();
     _priceFocusNode.dispose();
+    _commissionFocusNode.dispose();
+    _remarksFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _updatePrice() async {
+  Future<void> _updateDetails() async {
     final String priceText = _priceController.text.trim();
-    if (priceText.isEmpty) return;
+    final String commissionText = _commissionController.text.trim();
+    final String remarks = _remarksController.text.trim();
 
-    final double? newPrice = double.tryParse(priceText);
-    if (newPrice == null) {
-      _showErrorSnackBar('Please enter a valid price');
-      return;
+    double? newPrice;
+    if (priceText.isNotEmpty) {
+      newPrice = double.tryParse(priceText);
+      if (newPrice == null) {
+        _showErrorSnackBar('Please enter a valid price');
+        return;
+      }
+      if (newPrice < 0) {
+        _showErrorSnackBar('Price cannot be negative');
+        return;
+      }
     }
 
-    if (newPrice < 0) {
-      _showErrorSnackBar('Price cannot be negative');
-      return;
+    double? commission;
+    if (commissionText.isNotEmpty) {
+      commission = double.tryParse(commissionText);
+      if (commission == null) {
+        _showErrorSnackBar('Please enter a valid commission');
+        return;
+      }
+      if (commission < 0) {
+        _showErrorSnackBar('Commission cannot be negative');
+        return;
+      }
+      if (commission > 100) {
+        _showErrorSnackBar('Commission cannot exceed 100%');
+        return;
+      }
     }
 
-    setState(() => _isUpdatingPrice = true);
+    setState(() => _isUpdating = true);
 
     try {
-      await widget.onPriceUpdated?.call(newPrice);
+      await Future.delayed(const Duration(seconds: 1));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Price updated successfully'),
+            content: Text('Details updated successfully'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
         );
         _priceFocusNode.unfocus();
+        _commissionFocusNode.unfocus();
+        _remarksFocusNode.unfocus();
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Failed to update price');
+        _showErrorSnackBar('Failed to update details');
       }
     } finally {
       if (mounted) {
-        setState(() => _isUpdatingPrice = false);
+        setState(() => _isUpdating = false);
       }
     }
   }
@@ -330,6 +351,7 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -355,255 +377,287 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: ListView(
-              controller: widget.scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              children: [
-                // Title with status indicator
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.item.displayName,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: widget.item.isActive == true
-                            ? Colors.green.shade50
-                            : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        widget.item.isActive == true ? 'Active' : 'Inactive',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: widget.item.isActive == true
-                              ? Colors.green.shade700
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ],
+            child: GestureDetector(
+              onTap: () {
+                // Dismiss keyboard when tapping outside
+                FocusScope.of(context).unfocus();
+              },
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 8,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
                 ),
-                const SizedBox(height: 20),
-
-                // Price Card - Presented prominently
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.shade50, Colors.indigo.shade50],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.blue.shade100),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.price_change, size: 20, color: Colors.blue.shade700),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Price Settings',
-                            style: TextStyle(
-                              fontSize: 14,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title with status indicator
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.item.itemRef.toString(),
+                            style: const TextStyle(
+                              fontSize: 22,
                               fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade700,
+                              letterSpacing: -0.3,
                             ),
                           ),
-                        ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: widget.item.isActive == 'T'
+                                ? Colors.green.shade50
+                                : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            widget.item.isActive == 'T' ? 'Active' : 'Inactive',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: widget.item.isActive == 'T'
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Basic Information Card
+                    Card(
+                      elevation: 0,
+                      color: Colors.grey.shade50,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: Colors.grey.shade200),
                       ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _buildDetailRow('Name', widget.item.itemName ?? 'N/A'),
+                            const Divider(height: 1, thickness: 1),
+                            const SizedBox(height: 8),
+                            _buildDetailRow('Size', widget.item.size ?? 'N/A'),
+                            const Divider(height: 1, thickness: 1),
+                            const SizedBox(height: 8),
+                            _buildDetailRow('Material', widget.item.materialDesc ?? 'N/A'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Update Details Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade50, Colors.indigo.shade50],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.blue.shade100),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Current Price',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _priceController.text.isEmpty ? '0.00' : double.tryParse(_priceController.text)?.toStringAsFixed(2) ?? _priceController.text,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                SizedBox(height: 6,)
-                              ],
+                          // Price Field
+                          const Text(
+                            'Price',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          Container(
-                            width: 1,
-                            height: 40,
-                            color: Colors.grey.shade300,
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TextField(
-                                  controller: _priceController,
-                                  focusNode: _priceFocusNode,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: InputDecoration(
-                                    hintText: '0.00',
-                                    isDense: true,
-                                    labelText: 'Update Price',
-                                    prefixStyle: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-                                    border: UnderlineInputBorder(
-                                      borderSide: BorderSide(color: Colors.grey.shade300),
-                                    ),
-                                    enabledBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(color: Colors.grey.shade300),
-                                    ),
-                                    focusedBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
-                                    ),
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _priceController,
+                            focusNode: _priceFocusNode,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              hintText: 'Enter price',
+                              prefixStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(height: 16),
+
+                          // Commission Field
+                          const Text(
+                            'Commission (%)',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _commissionController,
+                            focusNode: _commissionFocusNode,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              hintText: 'Enter commission percentage',
+                              suffixText: '%',
+                              suffixStyle: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Remarks Field
+                          const Text(
+                            'Remarks',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _remarksController,
+                            focusNode: _remarksFocusNode,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              hintText: 'Enter remarks here...',
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Update Button
                           SizedBox(
-                            height: 40,
+                            width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _isUpdatingPrice ? null : _updatePrice,
+                              onPressed: _isUpdating ? null : _updateDetails,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue.shade700,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
                               ),
-                              child: _isUpdatingPrice
+                              child: _isUpdating
                                   ? const SizedBox(
-                                height: 18,
-                                width: 18,
+                                height: 20,
+                                width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,
                                 ),
                               )
-                                  : const Text('Update'),
+                                  : const Text(
+                                'Update Details',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
+                    ),
+                    const SizedBox(height: 16),
 
-                // Details Card
-                Card(
-                  elevation: 0,
-                  color: Colors.grey.shade50,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: Colors.grey.shade200),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildDetailRow('Item Reference', widget.item.itemRef ?? 'N/A'),
-                        const _DetailDivider(),
-                        _buildDetailRow('Product Name', widget.item.productName ?? 'N/A'),
-                        const _DetailDivider(),
-                        _buildDetailRow('Item Name', widget.item.itemName ?? 'N/A'),
-                        const _DetailDivider(),
-                        _buildDetailRow('Size', widget.item.size ?? 'N/A'),
-                        const _DetailDivider(),
-                        _buildDetailRow('UOM', widget.item.uomName ?? 'N/A'),
-                        const _DetailDivider(),
-                        _buildDetailRow('Material', widget.item.materialDesc ?? 'N/A'),
-                        const _DetailDivider(),
-                        _buildDetailRow('Product Line', widget.item.productLineName ?? 'N/A'),
-                        if (widget.item.remarks != null && widget.item.remarks!.isNotEmpty) ...[
-                          const _DetailDivider(),
-                          _buildDetailRow('Remarks', widget.item.remarks!),
-                        ],
-                        if (widget.item.createDate != null) ...[
-                          const _DetailDivider(),
-                          _buildDetailRow(
-                            'Created Date',
-                            '${widget.item.createDate!.day}/${widget.item.createDate!.month}/${widget.item.createDate!.year}',
+                    // Close Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
-                      ],
+                          side: BorderSide(color: Colors.grey.shade400),
+                        ),
+                        child: Text(
+                          'Close',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(height: 20),
-
-                // Action buttons - Close only (Edit removed as requested)
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    side: BorderSide(color: Colors.grey.shade400),
-                  ),
-                  child: Text(
-                    'Close',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
       ),
-
     );
   }
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 110,
+            width: 100,
             child: Text(
               label,
               style: TextStyle(
@@ -627,19 +681,6 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DetailDivider extends StatelessWidget {
-  const _DetailDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      color: Colors.grey.shade200,
     );
   }
 }
