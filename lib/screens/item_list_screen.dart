@@ -575,7 +575,6 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
                             ),
                           ),
                           const SizedBox(height: 16),
-
                           // Remarks Field
                           const Text(
                             'Remarks',
@@ -609,7 +608,6 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
                             ),
                           ),
                           const SizedBox(height: 24),
-
                           // Update Button
                           SizedBox(
                             width: double.infinity,
