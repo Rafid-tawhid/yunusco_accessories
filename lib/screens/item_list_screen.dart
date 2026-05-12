@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yunusco_accessories/screens/create_costing_screen.dart';
 import '../riverpod/items_provider.dart';
@@ -481,7 +482,17 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
                           TextField(
                             controller: _priceController,
                             focusNode: _priceFocusNode,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+
+                            // Only numbers and decimal allowed
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'),
+                              ),
+                            ],
+
                             decoration: InputDecoration(
                               hintText: 'Enter price',
                               prefixStyle: const TextStyle(
@@ -490,18 +501,28 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
                               ),
                               filled: true,
                               fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                                borderSide: BorderSide(
+                                  color: Colors.blue.shade700,
+                                  width: 2,
+                                ),
                               ),
                             ),
                           ),
@@ -519,7 +540,16 @@ class _ItemDetailsSheetState extends State<_ItemDetailsSheet> {
                           TextField(
                             controller: _commissionController,
                             focusNode: _commissionFocusNode,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+
+                            // Only numbers and decimal allowed
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'),
+                              ),
+                            ],
                             decoration: InputDecoration(
                               hintText: 'Enter commission percentage',
                               suffixText: '%',
