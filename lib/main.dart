@@ -6,6 +6,7 @@ import 'package:yunusco_accessories/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   try {
@@ -13,95 +14,139 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ SUCCESS: Firebase connected!');
-
-
+    debugPrint('✅ SUCCESS: Firebase connected!');
   } catch (e) {
-    print('❌ ERROR: $e');
+    debugPrint('❌ ERROR: $e');
   }
-  runApp(ProviderScope(child: MyApp()));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Yunusco Accessories',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: SimpleSplashScreen(),
+      theme: AppTheme.light(),
+      home: const SimpleSplashScreen(),
     );
   }
 }
 
-
-
-
 class SimpleSplashScreen extends StatefulWidget {
+  const SimpleSplashScreen({super.key});
+
   @override
-  _SimpleSplashScreenState createState() => _SimpleSplashScreenState();
+  State<SimpleSplashScreen> createState() => _SimpleSplashScreenState();
 }
 
-class _SimpleSplashScreenState extends State<SimpleSplashScreen> {
+class _SimpleSplashScreenState extends State<SimpleSplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  late final Animation<double> _logoScale = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0, 0.7, curve: Curves.elasticOut),
+  );
+  late final Animation<double> _textFade = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0.5, 1, curve: Curves.easeOut),
+  );
+
   @override
   void initState() {
     super.initState();
-    Timer(Duration(seconds: 2), () {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>LoginScreen()));
+    _controller.forward();
+    Timer(const Duration(milliseconds: 1900), () {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        AppTheme.pageRoute(const LoginScreen()),
+      );
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Simple Logo
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Color(0xFF2C5530),
-                shape: BoxShape.circle,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ScaleTransition(
+                scale: _logoScale,
+                child: Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.brush_rounded,
+                    color: AppColors.primary,
+                    size: 46,
+                  ),
+                ),
               ),
-              child: Icon(
-                Icons.brush_rounded,
-                color: Colors.white,
-                size: 40,
+              const SizedBox(height: 28),
+              FadeTransition(
+                opacity: _textFade,
+                child: Column(
+                  children: const [
+                    Text(
+                      'Yunusco T&A BD',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Garments Accessories',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white70,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-
-            SizedBox(height: 30),
-
-            // Company Name
-            Text(
-              'Yunusco BD Ltd',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2C5530),
+              const SizedBox(height: 36),
+              FadeTransition(
+                opacity: _textFade,
+                child: const SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: Colors.white70,
+                  ),
+                ),
               ),
-            ),
-
-            SizedBox(height: 10),
-
-            // Tagline
-            Text(
-              'Garments Accessories',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[700],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

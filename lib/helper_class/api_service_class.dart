@@ -6,8 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
 import 'package:yunusco_accessories/helper_class/user_data.dart';
+import 'package:yunusco_accessories/models/requested_customer_details_model.dart';
 
 import '../models/user_model.dart';
+import '../models/requested_customer_model.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -19,8 +21,8 @@ class ApiService {
   late Dio _dio;
 
   /// Base URL for all API calls
-  // static const String baseUrl = 'http://192.168.5.4:8030/';
-  static const String baseUrl = 'http://182.160.122.108:1010/';
+   static const String baseUrl = 'http://192.168.5.4:8040/';
+  //static const String baseUrl = 'http://182.160.122.108:1010/';
   String? _sessionCookie; // store ASP.NET session cookie
 
   void _initDio() {
@@ -34,6 +36,7 @@ class ApiService {
         },
       ),
     );
+
 
     // Add interceptors
     _dio.interceptors.add(InterceptorsWrapper(
@@ -165,6 +168,60 @@ class ApiService {
       debugPrint('🚫 Unexpected error: ${e.message}');
     }
   }
+
+  /// 🔹 Get Requested Customers
+  Future<List<RequestedCustomerModel>> getRequestedCustomers() async {
+    try {
+      //YTA_Requested_CustomerList_Confirmed_Mobile
+      final response = await get('Customers/YTA_Requested_CustomerList_Confirmed_Mobile');
+      if (response != null && response.statusCode == 200) {
+        final List<dynamic> data = response.data is List ? response.data : (response.data['Data'] ?? []);
+        return data.map((item) => RequestedCustomerModel.fromJson(item)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching requested customers: $e');
+      return [];
+    }
+  }
+
+
+  Future<CustomerProfileDetailModel?> getCustomerProfileDetails(int customerId) async {
+    try {
+      final response = await get('Customers/CustomerOutsideDetailsMobile?customerId=$customerId');
+      if (response != null && response.statusCode == 200) {
+        final  data = response.data is List ? response.data : (response.data['Data'] ?? []);
+        return CustomerProfileDetailModel.fromJson(data);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching requested customers: $e');
+      return null;
+    }
+  }
+
+  Future<bool> confirmCustomerProfile(int customerId, int acceptReject) async {
+    try {
+      final response = await post(
+        'Customers/ConfirmOutsideCustomerProfileMobile',
+        {
+          'customerId': customerId,
+          'acceptReject': acceptReject,
+        },
+      );
+      if (response != null && response.statusCode == 200) {
+        return response.data['output'] == 'success' || 
+               response.data['Status'] == 'Success' ||
+               response.data['output'] == 'Success';
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error confirming customer profile: $e');
+      return false;
+    }
+  }
+
+
 
 
 
