@@ -8,6 +8,8 @@ import 'package:yunusco_accessories/helper_class/helper_class.dart';
 import 'package:yunusco_accessories/helper_class/user_data.dart';
 import 'package:yunusco_accessories/models/requested_customer_details_model.dart';
 
+import '../models/item_req_model.dart';
+import '../models/monthly_sales_model.dart';
 import '../models/user_model.dart';
 import '../models/requested_customer_model.dart';
 
@@ -21,8 +23,8 @@ class ApiService {
   late Dio _dio;
 
   /// Base URL for all API calls
-   static const String baseUrl = 'http://192.168.5.4:8040/';
-  //static const String baseUrl = 'http://182.160.122.108:1010/';
+  //static const String baseUrl = 'http://192.168.5.4:8040/';
+  static const String baseUrl = 'http://182.160.122.108:1010/';
   String? _sessionCookie; // store ASP.NET session cookie
 
   void _initDio() {
@@ -31,52 +33,52 @@ class ApiService {
         baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 15),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       ),
     );
 
-
     // Add interceptors
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // 🔹 Attach cookie if available
-        if (_sessionCookie != null) {
-          options.headers['Cookie'] = _sessionCookie;
-        }
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          // 🔹 Attach cookie if available
+          if (_sessionCookie != null) {
+            options.headers['Cookie'] = _sessionCookie;
+          }
 
-        debugPrint('➡️ [REQUEST] ${options.method} ${options.uri}');
-        debugPrint('Headers: ${options.headers}');
-        debugPrint('Data: ${options.data}');
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        // 🔹 Extract cookie if login API returns it
-        if (response.headers.map.containsKey('set-cookie')) {
-          final cookies = response.headers.map['set-cookie']!;
-          for (var cookie in cookies) {
-            if (cookie.startsWith('ASP.NET_SessionId=')) {
-              _sessionCookie = cookie.split(';').first;
-              debugPrint('🍪 New Session Cookie: $_sessionCookie');
+          debugPrint('➡️ [REQUEST] ${options.method} ${options.uri}');
+          debugPrint('Headers: ${options.headers}');
+          debugPrint('Data: ${options.data}');
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          // 🔹 Extract cookie if login API returns it
+          if (response.headers.map.containsKey('set-cookie')) {
+            final cookies = response.headers.map['set-cookie']!;
+            for (var cookie in cookies) {
+              if (cookie.startsWith('ASP.NET_SessionId=')) {
+                _sessionCookie = cookie.split(';').first;
+                debugPrint('🍪 New Session Cookie: $_sessionCookie');
+              }
             }
           }
-        }
 
-        debugPrint('✅ [RESPONSE] ${response.statusCode} -> ${response.data}');
-        return handler.next(response);
-      },
-      onError: (DioError error, handler) {
-        debugPrint('❌ [ERROR] ${error.response?.statusCode} -> ${error.message}');
-        // Handle expired session (e.g., 401 or empty response)
-        if (error.response?.statusCode == 401 ||
-            (error.response?.data == null &&
-                _sessionCookie != null)) {
-          debugPrint('⚠️ Session expired, please login again.');
-        }
-        return handler.next(error);
-      },
-    ));
+          debugPrint('✅ [RESPONSE] ${response.statusCode} -> ${response.data}');
+          return handler.next(response);
+        },
+        onError: (DioError error, handler) {
+          debugPrint(
+            '❌ [ERROR] ${error.response?.statusCode} -> ${error.message}',
+          );
+          // Handle expired session (e.g., 401 or empty response)
+          if (error.response?.statusCode == 401 ||
+              (error.response?.data == null && _sessionCookie != null)) {
+            debugPrint('⚠️ Session expired, please login again.');
+          }
+          return handler.next(error);
+        },
+      ),
+    );
   }
 
   /// 🔹 Login API - stores session cookie
@@ -84,41 +86,30 @@ class ApiService {
     try {
       ApiService apiService = ApiService();
 
-      var response = await apiService.post(
-        'Login/Login',
-        {
-          'LoginName': email,
-          'Password': password,
-        },
-      );
-      if(response!=null){
+      var response = await apiService.post('Login/Login', {
+        'LoginName': email,
+        'Password': password,
+      });
+      if (response != null) {
         // Get cookie
         final cookies = response.headers['set-cookie'];
 
         if (cookies != null && cookies.isNotEmpty) {
-
           final sessionCookie = cookies.first;
 
           debugPrint('COOKIE => $sessionCookie');
 
           // Save cookie
-          await DashboardHelper.saveSessionCookie(
-            sessionCookie,
-          );
+          await DashboardHelper.saveSessionCookie(sessionCookie);
         }
 
         if (response.data['output'].toString() == "success") {
-
-          UserData.user = UserModel.fromJson(
-            response.data['rValue'],
-          );
+          UserData.user = UserModel.fromJson(response.data['rValue']);
 
           return true;
-
         }
       }
       return false;
-
     } catch (e) {
       return false;
     }
@@ -129,12 +120,9 @@ class ApiService {
     try {
       final cookie = await DashboardHelper.getSessionCookie();
       final response = await _dio.get(
-          endpoint, queryParameters: query,
-          options: Options(
-            headers: {
-              'Cookie': cookie,
-            },
-          ),
+        endpoint,
+        queryParameters: query,
+        options: Options(headers: {'Cookie': cookie}),
       );
       return response;
     } on DioError catch (e) {
@@ -144,11 +132,17 @@ class ApiService {
   }
 
   /// POST Request
-  Future<Response?> post(String endpoint, dynamic data,
-      {Map<String, dynamic>? query}) async {
+  Future<Response?> post(
+    String endpoint,
+    dynamic data, {
+    Map<String, dynamic>? query,
+  }) async {
     try {
-      final response =
-      await _dio.post(endpoint, data: data, queryParameters: query);
+      final response = await _dio.post(
+        endpoint,
+        data: data,
+        queryParameters: query,
+      );
       return response;
     } on DioError catch (e) {
       _handleError(e);
@@ -163,7 +157,9 @@ class ApiService {
     } else if (e.type == DioErrorType.receiveTimeout) {
       debugPrint('📶 Receive timeout');
     } else if (e.response != null) {
-      debugPrint('⚠️ Server error: ${e.response?.statusCode} - ${e.response?.data}');
+      debugPrint(
+        '⚠️ Server error: ${e.response?.statusCode} - ${e.response?.data}',
+      );
     } else {
       debugPrint('🚫 Unexpected error: ${e.message}');
     }
@@ -173,10 +169,16 @@ class ApiService {
   Future<List<RequestedCustomerModel>> getRequestedCustomers() async {
     try {
       //YTA_Requested_CustomerList_Confirmed_Mobile
-      final response = await get('Customers/YTA_Requested_CustomerList_Confirmed_Mobile');
+      final response = await get(
+        'Customers/YTA_Requested_CustomerList_Confirmed_Mobile',
+      );
       if (response != null && response.statusCode == 200) {
-        final List<dynamic> data = response.data is List ? response.data : (response.data['Data'] ?? []);
-        return data.map((item) => RequestedCustomerModel.fromJson(item)).toList();
+        final List<dynamic> data = response.data is List
+            ? response.data
+            : (response.data['Data'] ?? []);
+        return data
+            .map((item) => RequestedCustomerModel.fromJson(item))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -185,12 +187,84 @@ class ApiService {
     }
   }
 
+  Future<List<MonthlySalesModel>> getMonthlySalesNew({int mons = 12}) async {
+    const String endpoint = 'http://182.160.122.108:1010/Home/MonthlySalesNew';
 
-  Future<CustomerProfileDetailModel?> getCustomerProfileDetails(int customerId) async {
     try {
-      final response = await get('Customers/CustomerOutsideDetailsMobile?customerId=$customerId');
+      final response = await http.get(Uri.parse('$endpoint?mons=$mons'));
+
+      debugPrint('Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        List<dynamic> rows = [];
+
+        if (decoded is List) {
+          rows = decoded;
+        } else if (decoded is Map) {
+          rows =
+              decoded['Data'] ??
+              decoded['data'] ??
+              decoded['result'] ??
+              decoded['Result'] ??
+              [];
+        }
+
+        return rows.map((item) => MonthlySalesModel.fromJson(item)).toList();
+      }
+
+      debugPrint(
+        'Failed to fetch monthly sales: ${response.statusCode} ${response.body}',
+      );
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching monthly sales: $e');
+      return [];
+    }
+  }
+
+  Future<List<ItemReqModel>> getPendingMaterialRequisitionsNew() async {
+    final response = await get('/HM/Order/GetPendingMaterialRequisitionsNew');
+    if (response == null || response.statusCode != 200) {
+      throw StateError(
+        'Failed to load pending material requisitions'
+        '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
+      );
+    }
+
+    final body = response.data;
+    final dynamic rows = body is List
+        ? body
+        : body is Map
+        ? body['data'] ?? body['Data']
+        : null;
+    if (rows is! List) {
+      throw const FormatException(
+        'Pending material requisitions response must contain a data list',
+      );
+    }
+
+    return rows.map((row) {
+      if (row is! Map) {
+        throw const FormatException(
+          'Pending material requisition entries must be objects',
+        );
+      }
+      return ItemReqModel.fromJson(Map<String, dynamic>.from(row));
+    }).toList();
+  }
+
+  Future<CustomerProfileDetailModel?> getCustomerProfileDetails(
+    int customerId,
+  ) async {
+    try {
+      final response = await get(
+        'Customers/CustomerOutsideDetailsMobile?customerId=$customerId',
+      );
       if (response != null && response.statusCode == 200) {
-        final  data = response.data is List ? response.data : (response.data['Data'] ?? []);
+        final data = response.data is List
+            ? response.data
+            : (response.data['Data'] ?? []);
         return CustomerProfileDetailModel.fromJson(data);
       }
       return null;
@@ -204,15 +278,12 @@ class ApiService {
     try {
       final response = await post(
         'Customers/ConfirmOutsideCustomerProfileMobile',
-        {
-          'customerId': customerId,
-          'acceptReject': acceptReject,
-        },
+        {'customerId': customerId, 'acceptReject': acceptReject},
       );
       if (response != null && response.statusCode == 200) {
-        return response.data['output'] == 'success' || 
-               response.data['Status'] == 'Success' ||
-               response.data['output'] == 'Success';
+        return response.data['output'] == 'success' ||
+            response.data['Status'] == 'Success' ||
+            response.data['output'] == 'Success';
       }
       return false;
     } catch (e) {
@@ -221,22 +292,17 @@ class ApiService {
     }
   }
 
-
-
-
-
-
   static Future<dynamic> uploadChallanWithQR({
     required num userId,
     required String portal,
     required String challanId,
     required File imageFile,
     required bool isIdentified,
-    required double qRMatchingPercentage
+    required double qRMatchingPercentage,
   }) async {
-
     // First, make sure baseUrl is set
-    String baseUrl = 'http://182.160.122.108:1010/'; // REPLACE WITH YOUR SERVER IP
+    String baseUrl =
+        'http://182.160.122.108:1010/'; // REPLACE WITH YOUR SERVER IP
 
     debugPrint('🔍 Using baseUrl: $baseUrl');
 
@@ -246,11 +312,14 @@ class ApiService {
     }
 
     // Construct the full URL
-    final apiUrl = 'http://182.160.122.108:1010/DeliveryChallan/UPLOADCHALLANRECEVINGWITHQR';
+    final apiUrl =
+        'http://182.160.122.108:1010/DeliveryChallan/UPLOADCHALLANRECEVINGWITHQR';
 
     debugPrint('📤 Starting upload...');
     debugPrint('🔗 FULL API URL: $apiUrl');
-    debugPrint('📝 Params: userId=$userId, portal=$portal, challanId=$challanId');
+    debugPrint(
+      '📝 Params: userId=$userId, portal=$portal, challanId=$challanId',
+    );
     debugPrint('📸 File path: ${imageFile.path}');
 
     try {
@@ -274,7 +343,8 @@ class ApiService {
       request.fields['portal'] = portal;
       request.fields['challanId'] = challanId.toString();
       request.fields['isIdentified'] = isIdentified.toString();
-      request.fields['QRMatchingPercentage'] = qRMatchingPercentage.toStringAsFixed(2);
+      request.fields['QRMatchingPercentage'] = qRMatchingPercentage
+          .toStringAsFixed(2);
       debugPrint('📦 Request fields: ${request.fields}');
 
       // Add image file
@@ -295,9 +365,12 @@ class ApiService {
       debugPrint('📄 Response length: ${responseData.length} characters');
 
       // Check if response is HTML error page
-      if (responseData.contains('<!DOCTYPE html>') || responseData.contains('<html>')) {
+      if (responseData.contains('<!DOCTYPE html>') ||
+          responseData.contains('<html>')) {
         debugPrint('❌ Received HTML error page instead of JSON');
-        debugPrint('💡 This means the API endpoint does not exist or URL is wrong');
+        debugPrint(
+          '💡 This means the API endpoint does not exist or URL is wrong',
+        );
         debugPrint('💡 Please check:');
         debugPrint('   1. Is the server running?');
         debugPrint('   2. Is the API endpoint path correct?');
@@ -318,14 +391,14 @@ class ApiService {
         debugPrint('❌ Upload failed with status ${response.statusCode}');
 
         // Try to extract error message
-        String errorMessage = 'Upload failed with status ${response.statusCode}';
+        String errorMessage =
+            'Upload failed with status ${response.statusCode}';
         if (responseData.contains('The resource cannot be found')) {
           errorMessage = 'API endpoint not found. Check URL: $apiUrl';
         }
 
         return response;
       }
-
     } catch (e, stackTrace) {
       debugPrint('❌ Exception occurred: $e');
       debugPrint('Stack trace: $stackTrace');
