@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../helper_class/api_service_class.dart';
 import '../models/item_req_model.dart';
 import '../theme/app_theme.dart';
+import 'item_requisition_detail_screen.dart';
 
 class ItemRequisitionsScreen extends StatefulWidget {
   const ItemRequisitionsScreen({super.key});
@@ -84,12 +85,34 @@ class _ItemRequisitionsScreenState extends State<ItemRequisitionsScreen> {
                   itemCount: _requisitions.length,
                   itemBuilder: (context, index) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _RequisitionCard(requisition: _requisitions[index]),
+                    child: _RequisitionCard(
+                      requisition: _requisitions[index],
+                      onTap: () => _openDetails(_requisitions[index]),
+                    ),
                   ),
                 ),
               ),
       ),
     );
+  }
+
+  Future<void> _openDetails(ItemReqModel requisition) async {
+    final id = requisition.materialRequisitionMasterId;
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Requisition ID is missing.')),
+      );
+      return;
+    }
+
+    final decided = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ItemRequisitionDetailScreen(requisitionId: id),
+      ),
+    );
+    if (decided == true && mounted) {
+      await _fetchRequisitions();
+    }
   }
 
   Widget _buildMessage({
@@ -130,93 +153,109 @@ class _ItemRequisitionsScreenState extends State<ItemRequisitionsScreen> {
 }
 
 class _RequisitionCard extends StatelessWidget {
-  const _RequisitionCard({required this.requisition});
+  const _RequisitionCard({required this.requisition, required this.onTap});
 
   final ItemReqModel requisition;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final requisitionNo = requisition.requisitionNo?.trim();
     final date = requisition.requisitionDate?.trim();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: AppShadows.card,
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.receipt_long_rounded,
-                color: AppColors.primary,
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  requisitionNo?.isNotEmpty == true
-                      ? requisitionNo!
-                      : 'Requisition',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: AppShadows.card,
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.receipt_long_rounded,
+                  color: AppColors.primary,
+                  size: 22,
                 ),
-              ),
-              if (requisition.isLocked == true)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: const Text(
-                    'Locked',
-                    style: TextStyle(
-                      color: AppColors.warning,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    requisitionNo?.isNotEmpty == true
+                        ? requisitionNo!
+                        : 'Requisition',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (date?.isNotEmpty == true)
-            _RequisitionDetail(
-              icon: Icons.calendar_today_rounded,
-              label: date!,
+                if (requisition.isLocked == true)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: const Text(
+                      'Locked',
+                      style: TextStyle(
+                        color: AppColors.warning,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          if (requisition.totalQuantity != null)
-            _RequisitionDetail(
-              icon: Icons.inventory_2_outlined,
-              label: 'Total quantity: ${requisition.totalQuantity}',
+            const SizedBox(height: 12),
+            if (date?.isNotEmpty == true)
+              _RequisitionDetail(
+                icon: Icons.calendar_today_rounded,
+                label: date!,
+              ),
+            if (requisition.totalQuantity != null)
+              _RequisitionDetail(
+                icon: Icons.inventory_2_outlined,
+                label: 'Total quantity: ${requisition.totalQuantity}',
+              ),
+            if (requisition.remarks?.trim().isNotEmpty == true)
+              _RequisitionDetail(
+                icon: Icons.notes_rounded,
+                label: requisition.remarks!.trim(),
+              ),
+            if (requisition.submittedBy?.trim().isNotEmpty == true)
+              _RequisitionDetail(
+                icon: Icons.person_outline_rounded,
+                label: 'Submitted by ${requisition.submittedBy!.trim()}',
+              ),
+            if (requisition.status != null)
+              _RequisitionDetail(
+                icon: Icons.info_outline_rounded,
+                label: 'Status: ${requisition.status}',
+              ),
+            const SizedBox(height: 12),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'See details',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          if (requisition.remarks?.trim().isNotEmpty == true)
-            _RequisitionDetail(
-              icon: Icons.notes_rounded,
-              label: requisition.remarks!.trim(),
-            ),
-          if (requisition.submittedBy?.trim().isNotEmpty == true)
-            _RequisitionDetail(
-              icon: Icons.person_outline_rounded,
-              label: 'Submitted by ${requisition.submittedBy!.trim()}',
-            ),
-          if (requisition.status != null)
-            _RequisitionDetail(
-              icon: Icons.info_outline_rounded,
-              label: 'Status: ${requisition.status}',
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

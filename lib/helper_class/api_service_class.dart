@@ -9,6 +9,7 @@ import 'package:yunusco_accessories/helper_class/user_data.dart';
 import 'package:yunusco_accessories/models/requested_customer_details_model.dart';
 
 import '../models/item_req_model.dart';
+import '../models/item_req_detail_model.dart';
 import '../models/monthly_sales_model.dart';
 import '../models/user_model.dart';
 import '../models/requested_customer_model.dart';
@@ -252,6 +253,51 @@ class ApiService {
       }
       return ItemReqModel.fromJson(Map<String, dynamic>.from(row));
     }).toList();
+  }
+
+  Future<ItemReqDetailModel> getManagementMaterialRequisition(num id) async {
+    final response = await get(
+      '/HM/Order/GetManagementMaterialRequisition',
+      query: {'id': id},
+    );
+    if (response == null || response.statusCode != 200) {
+      throw StateError(
+        'Failed to load requisition details'
+        '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
+      );
+    }
+
+    final body = response.data;
+    if (body is! Map || body['output']?.toString().toLowerCase() != 'success') {
+      throw StateError(
+        body is Map
+            ? body['msg']?.toString() ?? 'Failed to load requisition details'
+            : 'Invalid requisition response',
+      );
+    }
+    return ItemReqDetailModel.fromJson(Map<String, dynamic>.from(body));
+  }
+
+  Future<void> decideMaterialRequisition(ItemReqDecisionRequest request) async {
+    final response = await post(
+      '/HM/Order/DecideMaterialRequisition',
+      request.toJson(),
+    );
+    if (response == null || response.statusCode != 200) {
+      throw StateError(
+        'Failed to ${request.decision.toLowerCase()} requisition'
+        '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
+      );
+    }
+
+    final body = response.data;
+    if (body is! Map || body['output']?.toString().toLowerCase() != 'success') {
+      throw StateError(
+        body is Map
+            ? body['msg']?.toString() ?? 'Requisition decision failed'
+            : 'Invalid requisition decision response',
+      );
+    }
   }
 
   Future<CustomerProfileDetailModel?> getCustomerProfileDetails(
