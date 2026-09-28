@@ -554,7 +554,7 @@ class _CustomerProfileDetailScreenState
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           _signatureBox('SALES\nMANAGER/GM'),
-          _signatureBox('CUSTOMER SERVICE\nMANAGER/SR. MANAGER'),
+          _signatureBox('CS MANAGER/\nSR. MANAGER'),
           _signatureBox('VERIFIED BY\nCREDIT CONTROL'),
           _signatureBox('MANAGER\nCREDIT CONTROL'),
           _signatureBox('APPROVED BY\nMANAGEMENT'),

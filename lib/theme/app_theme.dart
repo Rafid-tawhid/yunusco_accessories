@@ -38,6 +38,12 @@ class AppColors {
     [Color(0xFF0D9488), Color(0xFF2DD4BF)], // teal – document submit
     [Color(0xFF2563EB), Color(0xFF60A5FA)], // blue – requested customer
   ];
+
+
+
+  static Color get error => Color(0xFFDC2626);
+  static Color get divider => Color(0xFFE5E7EB);
+
 }
 
 class AppShadows {

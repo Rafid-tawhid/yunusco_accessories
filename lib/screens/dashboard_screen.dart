@@ -1,32 +1,18 @@
-// screens/simple_dashboard_screen.dart
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:yunusco_accessories/helper_class/api_service_class.dart';
+import 'package:yunusco_accessories/helper_class/user_data.dart';
 import 'package:yunusco_accessories/models/monthly_sales_model.dart';
 import 'package:yunusco_accessories/screens/show_costing_items.dart';
 import 'package:yunusco_accessories/theme/app_theme.dart';
 import 'package:yunusco_accessories/widgets/fade_slide_in.dart';
-import 'document_submit.dart';
+
 import 'chalan_qr_scanner.dart';
+import 'document_submit.dart';
 import 'item_list_screen.dart';
 import 'item_requisitions_screen.dart';
+import 'management_dashboard_screen.dart';
 import 'requested_customer_screen.dart';
-
-class _DashboardModule {
-  final String title;
-  final String description;
-  final IconData icon;
-  final List<Color> gradient;
-  final WidgetBuilder builder;
-
-  const _DashboardModule({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.gradient,
-    required this.builder,
-  });
-}
 
 class SimpleDashboardScreen extends StatefulWidget {
   const SimpleDashboardScreen({super.key});
@@ -36,39 +22,39 @@ class SimpleDashboardScreen extends StatefulWidget {
 }
 
 class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
-  late final Future<List<MonthlySalesModel>> _monthlySalesFuture;
+  late Future<List<MonthlySalesModel>> _monthlySalesFuture;
 
-  List<_DashboardModule> get _modules => [
+  final List<_DashboardModule> _modules = [
+    // _DashboardModule(
+    //   title: 'Costing',
+    //   description: 'Calculate accessory pricing and costs',
+    //   icon: Icons.calculate_rounded,
+    //   gradient: AppColors.moduleGradients[0],
+    //   builder: (_) => ItemsListScreen(),
+    // ),
+    // _DashboardModule(
+    //   title: 'Accessories',
+    //   description: 'Manage garment accessories',
+    //   icon: Icons.inventory_2_rounded,
+    //   gradient: AppColors.moduleGradients[1],
+    //   builder: (_) => const ViewAccessoriesScreen(),
+    // ),
+    // _DashboardModule(
+    //   title: 'Chalan Report',
+    //   description: 'Upload and manage chalan reports',
+    //   icon: Icons.qr_code_scanner_rounded,
+    //   gradient: AppColors.moduleGradients[2],
+    //   builder: (_) => const ChalanScanScreen(),
+    // ),
+    // _DashboardModule(
+    //   title: 'Document Submit',
+    //   description: 'Send updated info via WhatsApp',
+    //   icon: Icons.send_and_archive_rounded,
+    //   gradient: AppColors.moduleGradients[3],
+    //   builder: (_) => DocumentSubmitScreen(),
+    // ),
     _DashboardModule(
-      title: 'Costing',
-      description: 'Calculate accessory pricing and costs',
-      icon: Icons.calculate_rounded,
-      gradient: AppColors.moduleGradients[0],
-      builder: (_) => ItemsListScreen(),
-    ),
-    _DashboardModule(
-      title: 'Accessories',
-      description: 'Manage garment accessories',
-      icon: Icons.inventory_2_rounded,
-      gradient: AppColors.moduleGradients[1],
-      builder: (_) => const ViewAccessoriesScreen(),
-    ),
-    _DashboardModule(
-      title: 'Chalan Report',
-      description: 'Upload and manage chalan reports',
-      icon: Icons.qr_code_scanner_rounded,
-      gradient: AppColors.moduleGradients[2],
-      builder: (_) => const ChalanScanScreen(),
-    ),
-    _DashboardModule(
-      title: 'Document Submit',
-      description: 'Send updated info via WhatsApp',
-      icon: Icons.send_and_archive_rounded,
-      gradient: AppColors.moduleGradients[3],
-      builder: (_) => DocumentSubmitScreen(),
-    ),
-    _DashboardModule(
-      title: 'Requested Customer',
+      title: 'Pending Customer',
       description: 'Review and confirm customer requests',
       icon: Icons.person_add_alt_1_rounded,
       gradient: AppColors.moduleGradients[4],
@@ -76,7 +62,7 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     ),
     _DashboardModule(
       title: 'Item Requisitions',
-      description: 'Item is confirmed waiting for requisitions',
+      description: 'Review material requisitions',
       icon: Icons.inventory_2_rounded,
       gradient: AppColors.moduleGradients[4],
       builder: (_) => const ItemRequisitionsScreen(),
@@ -91,20 +77,20 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final modules = _modules;
-
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: _buildDrawer(),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: 150,
             elevation: 0,
+            centerTitle: true,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+              titlePadding: const EdgeInsets.only(left: 72, bottom: 16),
               title: const Text(
                 'Accessories Dashboard',
                 style: TextStyle(
@@ -131,71 +117,182 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: FutureBuilder<List<MonthlySalesModel>>(
-                future: _monthlySalesFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Container(
-                      height: 260,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: AppShadows.card,
-                      ),
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  }
 
-                  if (!snapshot.hasData ||
-                      snapshot.data == null ||
-                      snapshot.data!.isEmpty) {
-                    return Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: AppShadows.card,
-                      ),
-                      child: const Text(
-                        'No sales data available.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    );
-                  }
-
-                  return _SalesOverviewCard(sales: snapshot.data!);
-                },
-              ),
-            ),
-          ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
-                final module = modules[index];
+                final module = _modules[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 14),
                   child: FadeSlideIn.staggered(
                     index: index,
-                    child: _ModuleCard(module: module),
+                    child: _ModuleCard(
+                      module: module,
+                      onTap: () => _openModule(module),
+                    ),
                   ),
                 );
-              }, childCount: modules.length),
+              }, childCount: _modules.length),
             ),
           ),
         ],
       ),
     );
   }
+
+  Drawer _buildDrawer() {
+    final user = UserData.user;
+    final name = user.userName?.trim().isNotEmpty == true
+        ? user.userName!.trim()
+        : user.loginName?.trim().isNotEmpty == true
+        ? user.loginName!.trim()
+        : 'Yunusco team member';
+
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+              decoration: const BoxDecoration(
+                gradient: AppColors.primaryGradient,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 27,
+                    backgroundColor: Colors.white.withValues(alpha: 0.18),
+                    child: Text(
+                      _initials(name),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    user.userEmail?.trim().isNotEmpty == true
+                        ? user.userEmail!.trim()
+                        : 'Yunusco Accessories',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'WORKSPACE',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                children: [
+                  _DrawerTile(
+                    icon: Icons.dashboard_rounded,
+                    title: 'Accessories Dashboard',
+                    selected: true,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  _DrawerTile(
+                    icon: Icons.analytics_rounded,
+                    title: 'Management Dashboard',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        AppTheme.pageRoute(const ManagementDashboardScreen()),
+                      );
+                    },
+                  ),
+                  const Divider(height: 24),
+                  for (final module in _modules)
+                    _DrawerTile(
+                      icon: module.icon,
+                      title: module.title,
+                      onTap: () => _openModule(module, closeDrawer: true),
+                    ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.business_rounded,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Yunusco T&A BD',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openModule(_DashboardModule module, {bool closeDrawer = false}) {
+    if (closeDrawer) Navigator.pop(context);
+    Navigator.of(
+      context,
+    ).push(AppTheme.pageRoute(Builder(builder: module.builder)));
+  }
+
+  String _initials(String name) {
+    if (name == 'Yunusco team member') return 'Y';
+    return name
+        .split(RegExp(r'\s+'))
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+  }
 }
 
 class _SalesOverviewCard extends StatelessWidget {
-  final List<MonthlySalesModel> sales;
-
   const _SalesOverviewCard({required this.sales});
+
+  final List<MonthlySalesModel> sales;
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +306,7 @@ class _SalesOverviewCard extends StatelessWidget {
       (sum, item) => sum + (item.deliveredValue ?? 0),
     );
 
-    double maxValue = 1;
+    var maxValue = 1.0;
     for (final item in limitedSales) {
       maxValue = [
         maxValue,
@@ -223,7 +320,7 @@ class _SalesOverviewCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: AppShadows.card,
       ),
       child: Column(
@@ -291,17 +388,17 @@ class _SalesOverviewCard extends StatelessWidget {
                   drawVerticalLine: false,
                   horizontalInterval: maxValue / 4,
                   getDrawingHorizontalLine: (value) =>
-                      FlLine(color: const Color(0xFFE5E7EB), strokeWidth: 1),
+                      const FlLine(color: Color(0xFFE5E7EB), strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
+                  leftTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  rightTitles: AxisTitles(
+                  rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  topTitles: AxisTitles(
+                  topTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
                   bottomTitles: AxisTitles(
@@ -311,7 +408,7 @@ class _SalesOverviewCard extends StatelessWidget {
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         if (index < 0 || index >= limitedSales.length) {
-                          return const SizedBox();
+                          return const SizedBox.shrink();
                         }
                         final month = limitedSales[index].orderYrMn ?? '';
                         return Padding(
@@ -329,10 +426,9 @@ class _SalesOverviewCard extends StatelessWidget {
                   ),
                 ),
                 barGroups: limitedSales.asMap().entries.map((entry) {
-                  final index = entry.key;
                   final item = entry.value;
                   return BarChartGroupData(
-                    x: index,
+                    x: entry.key,
                     barsSpace: 6,
                     barRods: [
                       BarChartRodData(
@@ -358,9 +454,9 @@ class _SalesOverviewCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: const [
+            children: [
               _Legend(color: Color(0xFF4F46E5), label: 'Order'),
               SizedBox(width: 16),
               _Legend(color: Color(0xFF10B981), label: 'Delivered'),
@@ -373,15 +469,15 @@ class _SalesOverviewCard extends StatelessWidget {
 }
 
 class _MetricTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
   const _MetricTile({
     required this.label,
     required this.value,
     required this.color,
   });
+
+  final String label;
+  final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -417,10 +513,10 @@ class _MetricTile extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
+  const _Legend({required this.color, required this.label});
+
   final Color color;
   final String label;
-
-  const _Legend({required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -445,19 +541,15 @@ class _Legend extends StatelessWidget {
 }
 
 class _ModuleCard extends StatelessWidget {
-  final _DashboardModule module;
+  const _ModuleCard({required this.module, required this.onTap});
 
-  const _ModuleCard({required this.module});
+  final _DashboardModule module;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return TapScale(
-      onTap: () {
-        Navigator.push(
-          context,
-          AppTheme.pageRoute(Builder(builder: module.builder)),
-        );
-      },
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -515,8 +607,8 @@ class _ModuleCard extends StatelessWidget {
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF3F4F6),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -531,4 +623,96 @@ class _ModuleCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SalesMessage extends StatelessWidget {
+  const _SalesMessage({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          if (onRetry != null)
+            IconButton(
+              onPressed: onRetry,
+              tooltip: 'Retry',
+              icon: const Icon(Icons.refresh_rounded),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DrawerTile extends StatelessWidget {
+  const _DrawerTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        selected: selected,
+        selectedTileColor: const Color(0xFFEFF3FF),
+        leading: Icon(
+          icon,
+          color: selected ? AppColors.primary : AppColors.textSecondary,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: selected ? AppColors.primary : AppColors.textPrimary,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardModule {
+  const _DashboardModule({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.gradient,
+    required this.builder,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
+  final List<Color> gradient;
+  final WidgetBuilder builder;
 }

@@ -1,13 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
 import 'package:yunusco_accessories/helper_class/user_data.dart';
 import 'package:yunusco_accessories/models/requested_customer_details_model.dart';
-
+import '../models/dashboard_model.dart';
 import '../models/item_req_model.dart';
 import '../models/item_req_detail_model.dart';
 import '../models/monthly_sales_model.dart';
@@ -222,6 +221,49 @@ class ApiService {
       debugPrint('Error fetching monthly sales: $e');
       return [];
     }
+  }
+
+  Future<DashboardModel> getManagementDashboardDataV2() async {
+    final response = await get('/Reporting/ManagementDashboardDataV2');
+    if (response == null || response.statusCode != 200) {
+      throw StateError(
+        'Failed to load dashboard data'
+        '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
+      );
+    }
+
+    dynamic payload = response.data;
+    if (payload is Map) {
+      final output = payload['output']?.toString().toLowerCase();
+      if (output != null && output != 'success') {
+        throw StateError(
+          payload['msg']?.toString() ??
+              payload['message']?.toString() ??
+              'Dashboard data request failed',
+        );
+      }
+
+      for (final key in [
+        'rValue',
+        'Data',
+        'data',
+        'result',
+        'Result',
+        'dashboardData',
+        'DashboardData',
+      ]) {
+        final candidate = payload[key];
+        if (candidate is Map) {
+          payload = candidate;
+          break;
+        }
+      }
+    }
+
+    if (payload is! Map) {
+      throw const FormatException('Dashboard response must be an object');
+    }
+    return DashboardModel.fromJson(Map<String, dynamic>.from(payload));
   }
 
   Future<List<ItemReqModel>> getPendingMaterialRequisitionsNew() async {
