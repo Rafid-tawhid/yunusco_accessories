@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../helper_class/api_service_class.dart';
-import '../models/requested_customer_details_model.dart';
+import '../../helper_class/api_service_class.dart';
+import '../../models/requested_customer_details_model.dart';
 
 /// ============================================================================
 ///  CustomerProfileDetailScreen

@@ -3,10 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
-import 'package:yunusco_accessories/screens/show_costing_items.dart';
+import 'package:yunusco_accessories/screens/costing/show_costing_items.dart';
 
-import '../models/acessories_model.dart';
-import '../riverpod/costing_provider.dart';
+import '../../models/acessories_model.dart';
+import '../../riverpod/costing_provider.dart';
 
 
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../helper_class/api_service_class.dart';
-import '../models/requested_customer_model.dart';
-import '../theme/app_theme.dart';
-import '../widgets/fade_slide_in.dart';
+import '../../helper_class/api_service_class.dart';
+import '../../models/requested_customer_model.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/fade_slide_in.dart';
 import 'customer_profile_details_screen.dart';
 
 class RequestedCustomerScreen extends StatefulWidget {

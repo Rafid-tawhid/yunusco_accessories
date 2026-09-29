@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../helper_class/api_service_class.dart';
-import '../models/item_req_model.dart';
-import '../theme/app_theme.dart';
+import '../../helper_class/api_service_class.dart';
+import '../../models/item_req_model.dart';
+import '../../theme/app_theme.dart';
 import 'item_requisition_detail_screen.dart';
 
 class ItemRequisitionsScreen extends StatefulWidget {

@@ -5,8 +5,8 @@ import 'package:yunusco_accessories/firebase/auth_service.dart';
 import 'package:yunusco_accessories/helper_class/api_service_class.dart';
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
 
-import '../models/acessories_model.dart';
-import '../riverpod/costing_provider.dart';
+import '../../models/acessories_model.dart';
+import '../../riverpod/costing_provider.dart';
 
 class ViewAccessoriesScreen extends ConsumerWidget {
   const ViewAccessoriesScreen({super.key});

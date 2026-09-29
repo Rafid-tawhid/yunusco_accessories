@@ -1,24 +1,37 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:yunusco_accessories/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
+import 'helper_class/user_data.dart';
+import 'screens/dashboard_screen.dart';
+import 'services/push_notification_service.dart';
 import 'theme/app_theme.dart';
 
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    debugPrint('✅ SUCCESS: Firebase connected!');
-  } catch (e) {
-    debugPrint('❌ ERROR: $e');
-  }
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  await PushNotificationService.instance.initialize(
+    onNotificationTap: _openDashboardFromNotification,
+  );
   runApp(const ProviderScope(child: MyApp()));
+}
+
+void _openDashboardFromNotification(Map<String, dynamic> data) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final navigator = appNavigatorKey.currentState;
+    if (navigator == null || UserData.user.userId == null) return;
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const SimpleDashboardScreen()),
+    );
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -27,7 +40,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Yunusco Accessories',
+      navigatorKey: appNavigatorKey,
+      title: 'Accessories',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       home: const SimpleSplashScreen(),

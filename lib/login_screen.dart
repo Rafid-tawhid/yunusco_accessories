@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yunusco_accessories/helper_class/helper_class.dart';
+import 'package:yunusco_accessories/helper_class/user_data.dart';
 import 'package:yunusco_accessories/riverpod/auth_provider.dart';
 import 'package:yunusco_accessories/screens/dashboard_screen.dart';
+import 'package:yunusco_accessories/services/push_notification_service.dart';
 import 'package:yunusco_accessories/theme/app_theme.dart';
 import 'package:yunusco_accessories/widgets/fade_slide_in.dart';
 
@@ -73,6 +75,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       var response = await ref.read(authProvider.notifier).loginUser(email, password);
       debugPrint('CURRENT RESPONSE $response');
       if (response) {
+        try {
+          await ref.read(pushNotificationServiceProvider).requestPermissionAndRegister(UserData.user);
+        } catch (error) {
+          debugPrint('Push notification setup failed: $error');
+        }
         DashboardHelper.saveString('user', _loginEmailController.text.trim());
         DashboardHelper.saveString('pass', _loginPasswordController.text.trim());
         if (!mounted) return;

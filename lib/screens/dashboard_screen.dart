@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:yunusco_accessories/helper_class/api_service_class.dart';
 import 'package:yunusco_accessories/helper_class/user_data.dart';
 import 'package:yunusco_accessories/models/monthly_sales_model.dart';
-import 'package:yunusco_accessories/screens/show_costing_items.dart';
+import 'package:yunusco_accessories/screens/costing/show_costing_items.dart';
 import 'package:yunusco_accessories/theme/app_theme.dart';
 import 'package:yunusco_accessories/widgets/fade_slide_in.dart';
 
-import 'chalan_qr_scanner.dart';
-import 'document_submit.dart';
-import 'item_list_screen.dart';
-import 'item_requisitions_screen.dart';
+import 'costing/chalan_qr_scanner.dart';
+import 'costing/document_submit.dart';
+import 'item/item_list_screen.dart';
+import 'item/item_requisitions_screen.dart';
 import 'management_dashboard_screen.dart';
-import 'requested_customer_screen.dart';
+import 'cp/requested_customer_screen.dart';
 
 class SimpleDashboardScreen extends StatefulWidget {
   const SimpleDashboardScreen({super.key});

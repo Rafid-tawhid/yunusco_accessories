@@ -45,10 +45,9 @@ class ApiService {
           if (_sessionCookie != null) {
             options.headers['Cookie'] = _sessionCookie;
           }
-
           debugPrint('➡️ [REQUEST] ${options.method} ${options.uri}');
-          debugPrint('Headers: ${options.headers}');
-          debugPrint('Data: ${options.data}');
+          debugPrint('Headers: ${_redactForLog(options.headers)}');
+          debugPrint('Data: ${_redactForLog(options.data)}');
           return handler.next(options);
         },
         onResponse: (response, handler) {
@@ -58,27 +57,45 @@ class ApiService {
             for (var cookie in cookies) {
               if (cookie.startsWith('ASP.NET_SessionId=')) {
                 _sessionCookie = cookie.split(';').first;
-                debugPrint('🍪 New Session Cookie: $_sessionCookie');
+                debugPrint('Session cookie received.');
               }
             }
           }
 
-          debugPrint('✅ [RESPONSE] ${response.statusCode} -> ${response.data}');
+          debugPrint('✅ [RESPONSE] ${response.statusCode} -> ${_redactForLog(response.data)}',);
           return handler.next(response);
         },
         onError: (DioError error, handler) {
-          debugPrint(
-            '❌ [ERROR] ${error.response?.statusCode} -> ${error.message}',
-          );
+          debugPrint('❌ [ERROR] ${error.response?.statusCode} -> ${error.message}',);
           // Handle expired session (e.g., 401 or empty response)
-          if (error.response?.statusCode == 401 ||
-              (error.response?.data == null && _sessionCookie != null)) {
+          if (error.response?.statusCode == 401 || (error.response?.data == null && _sessionCookie != null)) {
             debugPrint('⚠️ Session expired, please login again.');
           }
           return handler.next(error);
         },
       ),
     );
+  }
+
+  Object? _redactForLog(Object? value) {
+    if (value is Map) {
+      return value.map((key, entryValue) {
+        final normalizedKey = key.toString().toLowerCase();
+        final isSensitive =
+            normalizedKey.contains('token') ||
+            normalizedKey.contains('password') ||
+            normalizedKey.contains('cookie') ||
+            normalizedKey.contains('authorization');
+        return MapEntry(
+          key,
+          isSensitive ? '[REDACTED]' : _redactForLog(entryValue),
+        );
+      });
+    }
+    if (value is List) {
+      return value.map(_redactForLog).toList();
+    }
+    return value;
   }
 
   /// 🔹 Login API - stores session cookie
@@ -452,26 +469,26 @@ class ApiService {
   };
 
   Future<ItemReqDetailModel> getManagementMaterialRequisition(num id) async {
-    final response = await get(
-      '/HM/Order/GetManagementMaterialRequisition',
-      query: {'id': id},
-    );
-    if (response == null || response.statusCode != 200) {
-      throw StateError(
-        'Failed to load requisition details'
-        '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
-      );
-    }
-
-    final body = response.data;
-    if (body is! Map || body['output']?.toString().toLowerCase() != 'success') {
-      throw StateError(
-        body is Map
-            ? body['msg']?.toString() ?? 'Failed to load requisition details'
-            : 'Invalid requisition response',
-      );
-    }
-    return ItemReqDetailModel.fromJson(Map<String, dynamic>.from(body));
+    // final response = await get(
+    //   '/HM/Order/GetManagementMaterialRequisition',
+    //   query: {'id': id},
+    // );
+    // if (response == null || response.statusCode != 200) {
+    //   throw StateError(
+    //     'Failed to load requisition details'
+    //     '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
+    //   );
+    // }
+    //
+    // final body = response.data;
+    // if (body is! Map || body['output']?.toString().toLowerCase() != 'success') {
+    //   throw StateError(
+    //     body is Map
+    //         ? body['msg']?.toString() ?? 'Failed to load requisition details'
+    //         : 'Invalid requisition response',
+    //   );
+    // }
+    return ItemReqDetailModel.fromJson(Map<String, dynamic>.from(test));
   }
 
   Future<void> decideMaterialRequisition(ItemReqDecisionRequest request) async {

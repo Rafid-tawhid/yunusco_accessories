@@ -113,21 +113,18 @@ class ItemReqLineModel {
 }
 
 class ItemReqHistoryModel {
-  const ItemReqHistoryModel({this.monthNo, this.yearNo, this.quantity,this.price,this.buyer});
+  const ItemReqHistoryModel({this.monthNo, this.yearNo, this.quantity});
 
   final num? monthNo;
   final num? yearNo;
   final num? quantity;
-  final num? price;
-  final String? buyer;
+
 
   factory ItemReqHistoryModel.fromJson(Map<String, dynamic> json) {
     return ItemReqHistoryModel(
       monthNo: _asNum(json['MonthNo']),
       yearNo: _asNum(json['YearNo']),
-      quantity: _asNum(json['Quantity']),
-      price: _asNum(json['Price']),
-      buyer: json['Buyer'],
+      quantity: _asNum(json['Quantity'])
 
     );
   }

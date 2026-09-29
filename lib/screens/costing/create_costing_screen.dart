@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
-import '../riverpod/data_provider.dart';
-import '../models/costing_items.dart';
+import '../../riverpod/data_provider.dart';
+import '../../models/costing_items.dart';
 import 'costing_price_screen.dart';
 
 class CostingScreen extends ConsumerStatefulWidget {
