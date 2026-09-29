@@ -251,69 +251,88 @@ class _ItemRequisitionDetailScreenState
   }
 
   Future<String?> _requestComment(String decision) async {
-    final controller = TextEditingController();
-    try {
-      return await showDialog<String>(
-        context: context,
-        builder: (dialogContext) {
-          String? validationError;
-          return StatefulBuilder(
-            builder: (context, setDialogState) => AlertDialog(
-              title: Text('$decision requisition?'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    decision == 'Reject'
-                        ? 'Add a note explaining why this requisition is rejected.'
-                        : 'Add an optional note for this approval.',
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: controller,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: decision == 'Reject'
-                          ? 'Rejection note'
-                          : 'Optional note',
-                      errorText: validationError,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ],
+    return showDialog<String>(
+      context: context,
+      builder: (_) => _DecisionCommentDialog(decision: decision),
+    );
+  }
+}
+
+class _DecisionCommentDialog extends StatefulWidget {
+  const _DecisionCommentDialog({required this.decision});
+
+  final String decision;
+
+  @override
+  State<_DecisionCommentDialog> createState() => _DecisionCommentDialogState();
+}
+
+class _DecisionCommentDialogState extends State<_DecisionCommentDialog> {
+  final TextEditingController _controller = TextEditingController();
+  String? _validationError;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final decision = widget.decision;
+    return AlertDialog(
+      title: Text('$decision requisition?'),
+      backgroundColor: Colors.white,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            decision == 'Reject'
+                ? 'Add a note explaining why this requisition is rejected.'
+                : 'Add an optional note for this approval.',
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _controller,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: decision == 'Reject'
+                  ? 'Rejection note'
+                  : 'Optional note',
+              errorText: _validationError,
+              border: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey, width: .5),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final comment = controller.text.trim();
-                    if (decision == 'Reject' && comment.isEmpty) {
-                      setDialogState(
-                            () => validationError = 'A rejection note is required.',
-                      );
-                      return;
-                    }
-                    Navigator.pop(dialogContext, comment);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: decision == 'Approve'
-                        ? AppColors.success
-                        : AppColors.danger,
-                  ),
-                  child: Text(decision),
-                ),
-              ],
             ),
-          );
-        },
-      );
-    } finally {
-      controller.dispose();
-    }
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final comment = _controller.text.trim();
+            if (decision == 'Reject' && comment.isEmpty) {
+              setState(
+                () => _validationError = 'A rejection note is required.',
+              );
+              return;
+            }
+            Navigator.pop(context, comment);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: decision == 'Approve'
+                ? AppColors.success
+                : AppColors.danger,
+          ),
+          child: Text(decision),
+        ),
+      ],
+    );
   }
 }
 
