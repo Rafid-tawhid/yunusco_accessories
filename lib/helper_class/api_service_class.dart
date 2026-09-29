@@ -469,26 +469,26 @@ class ApiService {
   };
 
   Future<ItemReqDetailModel> getManagementMaterialRequisition(num id) async {
-    // final response = await get(
-    //   '/HM/Order/GetManagementMaterialRequisition',
-    //   query: {'id': id},
-    // );
-    // if (response == null || response.statusCode != 200) {
-    //   throw StateError(
-    //     'Failed to load requisition details'
-    //     '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
-    //   );
-    // }
-    //
-    // final body = response.data;
-    // if (body is! Map || body['output']?.toString().toLowerCase() != 'success') {
-    //   throw StateError(
-    //     body is Map
-    //         ? body['msg']?.toString() ?? 'Failed to load requisition details'
-    //         : 'Invalid requisition response',
-    //   );
-    // }
-    return ItemReqDetailModel.fromJson(Map<String, dynamic>.from(test));
+    final response = await get(
+      '/HM/Order/GetManagementMaterialRequisition',
+      query: {'id': id},
+    );
+    if (response == null || response.statusCode != 200) {
+      throw StateError(
+        'Failed to load requisition details'
+        '${response?.statusCode == null ? '' : ' (${response!.statusCode})'}',
+      );
+    }
+
+    final body = response.data;
+    if (body is! Map || body['output']?.toString().toLowerCase() != 'success') {
+      throw StateError(
+        body is Map
+            ? body['msg']?.toString() ?? 'Failed to load requisition details'
+            : 'Invalid requisition response',
+      );
+    }
+    return ItemReqDetailModel.fromJson(Map<String, dynamic>.from(body));
   }
 
   Future<void> decideMaterialRequisition(ItemReqDecisionRequest request) async {
