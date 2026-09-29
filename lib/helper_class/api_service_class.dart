@@ -297,6 +297,160 @@ class ApiService {
     }).toList();
   }
 
+  final test={
+    "output": "success",
+    "msg": "Requisition fetched successfully.",
+    "master": {
+      "MaterialRequisitionMasterId": 1,
+      "RequisitionNo": "MR-2026-0001",
+      "RequisitionDate": "/Date(1790131387867)/",
+      "Remarks": "From Item Purchase Add page",
+      "TotalQuantity": 22000.0000,
+      "Status": 1,
+      "IsLocked": true,
+      "CreatedBy": 1,
+      "SubmittedBy": "Maruf Hossain",
+      "CreatedDate": "/Date(1790131387867)/",
+      "DecidedBy": "",
+      "DecidedDate": null,
+      "RejectReason": ""
+    },
+    "details": [
+      {
+        "MaterialRequisitionDetailsId": 1,
+        "MaterialRequisitionMasterId": 1,
+        "ItemId": "1",
+        "ItemName": "TAG",
+        "BuyerId": "101",
+        "BuyerName": "",
+        "Quantity": 2000.0000,
+        "UnitId": "KG",
+        "LineNo": 1,
+        "CreatedByName": "Maruf Hossain",
+        "Last6MonthsHistory": [
+          {
+            "MonthNo": 4,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 5,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 6,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 7,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 8,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 9,
+            "YearNo": 2026,
+            "Quantity": 2000.0000
+          }
+        ]
+      },
+      {
+        "MaterialRequisitionDetailsId": 2,
+        "MaterialRequisitionMasterId": 1,
+        "ItemId": "2",
+        "ItemName": "TAG",
+        "BuyerId": "102",
+        "BuyerName": "KINGS & QUEENS",
+        "Quantity": 15000.0000,
+        "UnitId": "Sheet",
+        "LineNo": 2,
+        "CreatedByName": "Maruf Hossain",
+        "Last6MonthsHistory": [
+          {
+            "MonthNo": 4,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 5,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 6,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 7,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 8,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 9,
+            "YearNo": 2026,
+            "Quantity": 15000.0000
+          }
+        ]
+      },
+      {
+        "MaterialRequisitionDetailsId": 3,
+        "MaterialRequisitionMasterId": 1,
+        "ItemId": "4",
+        "ItemName": "STICKER",
+        "BuyerId": "103",
+        "BuyerName": "FRANKI",
+        "Quantity": 5000.0000,
+        "UnitId": "KG",
+        "LineNo": 3,
+        "CreatedByName": "Maruf Hossain",
+        "Last6MonthsHistory": [
+          {
+            "MonthNo": 4,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 5,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 6,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 7,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 8,
+            "YearNo": 2026,
+            "Quantity": 0.0000
+          },
+          {
+            "MonthNo": 9,
+            "YearNo": 2026,
+            "Quantity": 5000.0000
+          }
+        ]
+      }
+    ]
+  };
+
   Future<ItemReqDetailModel> getManagementMaterialRequisition(num id) async {
     final response = await get(
       '/HM/Order/GetManagementMaterialRequisition',

@@ -2,9 +2,14 @@ class ItemReqDetailModel {
   const ItemReqDetailModel({
     this.materialRequisitionMasterId,
     this.requisitionNo,
+    this.requisitionDate,
+    this.remarks,
+    this.totalQuantity,
     this.status,
     this.isLocked,
+    this.createdBy,
     this.submittedBy,
+    this.createdDate,
     this.decidedBy,
     this.decidedDate,
     this.rejectReason,
@@ -13,9 +18,14 @@ class ItemReqDetailModel {
 
   final num? materialRequisitionMasterId;
   final String? requisitionNo;
+  final String? requisitionDate;
+  final String? remarks;
+  final num? totalQuantity;
   final num? status;
   final bool? isLocked;
+  final num? createdBy;
   final String? submittedBy;
+  final String? createdDate;
   final String? decidedBy;
   final String? decidedDate;
   final String? rejectReason;
@@ -36,9 +46,14 @@ class ItemReqDetailModel {
         masterJson['MaterialRequisitionMasterId'],
       ),
       requisitionNo: _asString(masterJson['RequisitionNo']),
+      requisitionDate: _asString(masterJson['RequisitionDate']),
+      remarks: _asString(masterJson['Remarks']),
+      totalQuantity: _asNum(masterJson['TotalQuantity']),
       status: _asNum(masterJson['Status']),
       isLocked: masterJson['IsLocked'] as bool?,
+      createdBy: _asNum(masterJson['CreatedBy']),
       submittedBy: _asString(masterJson['SubmittedBy']),
+      createdDate: _asString(masterJson['CreatedDate']),
       decidedBy: _asString(masterJson['DecidedBy']),
       decidedDate: _asString(masterJson['DecidedDate']),
       rejectReason: _asString(masterJson['RejectReason']),
@@ -64,6 +79,8 @@ class ItemReqLineModel {
     this.quantity,
     this.unitId,
     this.lineNo,
+    this.createdByName,
+    this.last6MonthsHistory = const [],
   });
 
   final num? materialRequisitionDetailsId;
@@ -74,6 +91,8 @@ class ItemReqLineModel {
   final num? quantity;
   final String? unitId;
   final num? lineNo;
+  final String? createdByName;
+  final List<ItemReqHistoryModel> last6MonthsHistory;
 
   factory ItemReqLineModel.fromJson(Map<String, dynamic> json) {
     return ItemReqLineModel(
@@ -87,6 +106,29 @@ class ItemReqLineModel {
       quantity: _asNum(json['Quantity']),
       unitId: _asString(json['UnitId']),
       lineNo: _asNum(json['LineNo']),
+      createdByName: _asString(json['CreatedByName']),
+      last6MonthsHistory: _parseHistory(json['Last6MonthsHistory']),
+    );
+  }
+}
+
+class ItemReqHistoryModel {
+  const ItemReqHistoryModel({this.monthNo, this.yearNo, this.quantity,this.price,this.buyer});
+
+  final num? monthNo;
+  final num? yearNo;
+  final num? quantity;
+  final num? price;
+  final String? buyer;
+
+  factory ItemReqHistoryModel.fromJson(Map<String, dynamic> json) {
+    return ItemReqHistoryModel(
+      monthNo: _asNum(json['MonthNo']),
+      yearNo: _asNum(json['YearNo']),
+      quantity: _asNum(json['Quantity']),
+      price: _asNum(json['Price']),
+      buyer: json['Buyer'],
+
     );
   }
 }
@@ -110,6 +152,19 @@ class ItemReqDecisionRequest {
     'comment': comment,
     'decidedBy': decidedBy,
   };
+}
+
+List<ItemReqHistoryModel> _parseHistory(dynamic value) {
+  if (value == null) return const [];
+  if (value is! List) {
+    throw const FormatException('Item history must be a list');
+  }
+  return value.map((entry) {
+    if (entry is! Map) {
+      throw const FormatException('Item history entries must be objects');
+    }
+    return ItemReqHistoryModel.fromJson(Map<String, dynamic>.from(entry));
+  }).toList();
 }
 
 num? _asNum(dynamic value) {

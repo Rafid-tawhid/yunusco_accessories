@@ -56,7 +56,7 @@ class _ItemRequisitionDetailScreenState
   Widget build(BuildContext context) {
     final requisition = _requisition;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(requisition?.requisitionNo ?? 'Requisition details'),
         flexibleSpace: Container(
@@ -126,7 +126,7 @@ class _ItemRequisitionDetailScreenState
                 const _InfoCard(child: Text('No item details were returned.'))
               else
                 ...requisition.details.map(
-                  (line) => Padding(
+                      (line) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _LineCard(line: line),
                   ),
@@ -147,48 +147,52 @@ class _ItemRequisitionDetailScreenState
         if (requisition.status == 0)
           SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: canDecide
-                          ? () => _submitDecision(requisition, 'Reject')
-                          : null,
-                      icon: const Icon(Icons.close_rounded),
-                      label: const Text('Reject'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.danger,
-                        side: const BorderSide(color: AppColors.danger),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+
+            child: Container(
+              color: Colors.transparent,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: canDecide
+                            ? () => _submitDecision(requisition, 'Reject')
+                            : null,
+                        icon: const Icon(Icons.close_rounded),
+                        label: const Text('Reject'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.danger,
+                          side: const BorderSide(color: AppColors.danger),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: canDecide
-                          ? () => _submitDecision(requisition, 'Approve')
-                          : null,
-                      icon: _isProcessing
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.check_rounded),
-                      label: const Text('Approve'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: canDecide
+                            ? () => _submitDecision(requisition, 'Approve')
+                            : null,
+                        icon: _isProcessing
+                            ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                            : const Icon(Icons.check_rounded),
+                        label: const Text('Approve'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -197,9 +201,9 @@ class _ItemRequisitionDetailScreenState
   }
 
   Future<void> _submitDecision(
-    ItemReqDetailModel requisition,
-    String decision,
-  ) async {
+      ItemReqDetailModel requisition,
+      String decision,
+      ) async {
     final decidedBy = UserData.user.userId;
     if (decidedBy == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -289,7 +293,7 @@ class _ItemRequisitionDetailScreenState
                     final comment = controller.text.trim();
                     if (decision == 'Reject' && comment.isEmpty) {
                       setDialogState(
-                        () => validationError = 'A rejection note is required.',
+                            () => validationError = 'A rejection note is required.',
                       );
                       return;
                     }
@@ -340,6 +344,36 @@ class _SummaryCard extends StatelessWidget {
               label: 'Submitted by',
               value: requisition.submittedBy!,
             ),
+          if (requisition.requisitionDate?.isNotEmpty == true)
+            _InfoRow(
+              icon: Icons.event_outlined,
+              label: 'Requisition date',
+              value: _formatDate(requisition.requisitionDate!),
+            ),
+          if (requisition.totalQuantity != null)
+            _InfoRow(
+              icon: Icons.inventory_2_outlined,
+              label: 'Total quantity',
+              value: _formatQuantity(requisition.totalQuantity!),
+            ),
+          if (requisition.remarks?.trim().isNotEmpty == true)
+            _InfoRow(
+              icon: Icons.notes_rounded,
+              label: 'Remarks',
+              value: requisition.remarks!.trim(),
+            ),
+          if (requisition.isLocked != null)
+            _InfoRow(
+              icon: Icons.lock_outline_rounded,
+              label: 'Locked',
+              value: requisition.isLocked! ? 'Yes' : 'No',
+            ),
+          if (requisition.createdDate?.isNotEmpty == true)
+            _InfoRow(
+              icon: Icons.calendar_today_rounded,
+              label: 'Created date',
+              value: _formatDate(requisition.createdDate!),
+            ),
           if (requisition.decidedBy?.isNotEmpty == true)
             _InfoRow(
               icon: Icons.verified_user_outlined,
@@ -350,7 +384,7 @@ class _SummaryCard extends StatelessWidget {
             _InfoRow(
               icon: Icons.calendar_today_rounded,
               label: 'Decision date',
-              value: requisition.decidedDate!,
+              value: _formatDate(requisition.decidedDate!),
             ),
         ],
       ),
@@ -392,20 +426,185 @@ class _LineCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (line.itemId?.isNotEmpty == true) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Item ID: ${line.itemId}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           _InfoRow(
             icon: Icons.numbers_rounded,
             label: 'Quantity',
-            value: '${line.quantity ?? '—'} ${line.unitId ?? ''}'.trim(),
+            value:
+            '${line.quantity == null ? '—' : _formatQuantity(line.quantity!)} ${line.unitId ?? ''}'
+                .trim(),
           ),
-          if (line.buyerName?.isNotEmpty == true)
+          if (line.buyerName?.isNotEmpty == true ||
+              line.buyerId?.isNotEmpty == true)
             _InfoRow(
               icon: Icons.person_outline_rounded,
               label: 'Buyer',
-              value: line.buyerName!,
+              value: [
+                if (line.buyerName?.isNotEmpty == true) line.buyerName!,
+                if (line.buyerId?.isNotEmpty == true) '(${line.buyerId})',
+              ].join(' '),
             ),
+          if (line.lineNo != null)
+            _InfoRow(
+              icon: Icons.format_list_numbered_rounded,
+              label: 'Line number',
+              value: _formatQuantity(line.lineNo!),
+            ),
+          if (line.createdByName?.isNotEmpty == true)
+            _InfoRow(
+              icon: Icons.person_outline_rounded,
+              label: 'Created by',
+              value: line.createdByName!,
+            ),
+          if (line.last6MonthsHistory.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text(
+              'Last 6 months history',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...line.last6MonthsHistory.map(
+                  (history) => _HistoryRow(history: history, unit: line.unitId),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _HistoryRow extends StatelessWidget {
+  const _HistoryRow({required this.history, this.unit});
+
+  final ItemReqHistoryModel history;
+  final String? unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final month = history.monthNo?.toInt();
+    final year = history.yearNo?.toInt();
+    final monthLabel = month != null && month >= 1 && month <= 12
+        ? _monthNames[month - 1]
+        : month?.toString() ?? 'Month';
+    final label = year == null ? monthLabel : '$monthLabel $year';
+    final quantity = history.quantity == null
+        ? '—'
+        : '${_formatQuantity(history.quantity!)}${unit?.isNotEmpty == true ? ' $unit' : ''}';
+    final price = history.price == null
+        ? '—'
+        : _formatCurrency(history.price!);
+    final buyer = history.buyer?.trim().isNotEmpty == true
+        ? history.buyer!.trim()
+        : '—';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Month / Year
+          SizedBox(
+            width: 72,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          // Quantity
+          Expanded(
+            child: _HistoryCell(
+              icon: Icons.inventory_2_outlined,
+              label: 'Qty',
+              value: quantity,
+            ),
+          ),
+          // Price
+          Expanded(
+            child: _HistoryCell(
+              icon: Icons.attach_money_rounded,
+              label: 'Price',
+              value: price,
+            ),
+          ),
+          // Buyer
+          Expanded(
+            child: _HistoryCell(
+              icon: Icons.person_outline_rounded,
+              label: 'Buyer',
+              value: buyer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryCell extends StatelessWidget {
+  const _HistoryCell({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 12, color: AppColors.textSecondary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -428,6 +627,41 @@ class _InfoCard extends StatelessWidget {
       child: child,
     );
   }
+}
+
+const _monthNames = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String _formatQuantity(num quantity) {
+  return quantity % 1 == 0 ? quantity.toInt().toString() : quantity.toString();
+}
+
+String _formatCurrency(num amount) {
+  final value = amount % 1 == 0 ? amount.toInt().toString() : amount.toString();
+  return '\$$value';
+}
+
+String _formatDate(String value) {
+  final match = RegExp(r'^/Date\((-?\d+)(?:[+-]\d{4})?\)/$').firstMatch(value);
+  final date = match == null
+      ? DateTime.tryParse(value)
+      : DateTime.fromMillisecondsSinceEpoch(int.parse(match.group(1)!));
+  if (date == null) return value;
+  return '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 }
 
 class _InfoRow extends StatelessWidget {
