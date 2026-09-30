@@ -318,32 +318,37 @@ class ApiService {
     "output": "success",
     "msg": "Requisition fetched successfully.",
     "master": {
-      "MaterialRequisitionMasterId": 1,
-      "RequisitionNo": "MR-2026-0001",
-      "RequisitionDate": "/Date(1790131387867)/",
-      "Remarks": "From Item Purchase Add page",
-      "TotalQuantity": 22000.0000,
-      "Status": 1,
-      "IsLocked": true,
-      "CreatedBy": 1,
-      "SubmittedBy": "Maruf Hossain",
-      "CreatedDate": "/Date(1790131387867)/",
+      "MaterialRequisitionMasterId": 15,
+      "RequisitionNo": "MR-20260929-8879",
+      "RequisitionDate": "2026-09-29 20:42:19",
+      "Remarks": "fake product",
+      "TotalQuantity": 35.0000,
+      "Status": 0,
+      "IsLocked": false,
+      "CreatedBy": 443,
+      "SubmittedBy": "ERP-TEAM",
+      "CreatedDate": "2026-09-29 20:39:20",
       "DecidedBy": "",
       "DecidedDate": null,
       "RejectReason": ""
     },
     "details": [
       {
-        "MaterialRequisitionDetailsId": 1,
-        "MaterialRequisitionMasterId": 1,
-        "ItemId": "1",
-        "ItemName": "TAG",
-        "BuyerId": "101",
-        "BuyerName": "",
-        "Quantity": 2000.0000,
-        "UnitId": "KG",
+        "MaterialRequisitionDetailsId": 14,
+        "MaterialRequisitionMasterId": 15,
+        "ItemId": "34",
+        "ItemName": null,
+        "ProductCode": "AC00034",
+        "ItemDisplay": null,
+        "BuyerId": "257",
+        "BuyerName": "4OCEANS",
+        "Quantity": 12.0000,
+        "UnitId": "8",
+        "UnitName": "Roll",
+        "Price": 1.00,
+        "ImagePath": "Product34_Original.jpg",
         "LineNo": 1,
-        "CreatedByName": "Maruf Hossain",
+        "CreatedByName": "",
         "Last6MonthsHistory": [
           {
             "MonthNo": 4,
@@ -373,21 +378,26 @@ class ApiService {
           {
             "MonthNo": 9,
             "YearNo": 2026,
-            "Quantity": 2000.0000
+            "Quantity": 12.0000
           }
         ]
       },
       {
-        "MaterialRequisitionDetailsId": 2,
-        "MaterialRequisitionMasterId": 1,
-        "ItemId": "2",
-        "ItemName": "TAG",
-        "BuyerId": "102",
-        "BuyerName": "KINGS & QUEENS",
-        "Quantity": 15000.0000,
-        "UnitId": "Sheet",
+        "MaterialRequisitionDetailsId": 15,
+        "MaterialRequisitionMasterId": 15,
+        "ItemId": "143",
+        "ItemName": null,
+        "ProductCode": "AC00143",
+        "ItemDisplay": null,
+        "BuyerId": "29",
+        "BuyerName": "AAI",
+        "Quantity": 23.0000,
+        "UnitId": "21",
+        "UnitName": "Pound",
+        "Price": 1.00,
+        "ImagePath": "Product143_Original.JPG",
         "LineNo": 2,
-        "CreatedByName": "Maruf Hossain",
+        "CreatedByName": "",
         "Last6MonthsHistory": [
           {
             "MonthNo": 4,
@@ -417,51 +427,7 @@ class ApiService {
           {
             "MonthNo": 9,
             "YearNo": 2026,
-            "Quantity": 15000.0000
-          }
-        ]
-      },
-      {
-        "MaterialRequisitionDetailsId": 3,
-        "MaterialRequisitionMasterId": 1,
-        "ItemId": "4",
-        "ItemName": "STICKER",
-        "BuyerId": "103",
-        "BuyerName": "FRANKI",
-        "Quantity": 5000.0000,
-        "UnitId": "KG",
-        "LineNo": 3,
-        "CreatedByName": "Maruf Hossain",
-        "Last6MonthsHistory": [
-          {
-            "MonthNo": 4,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 5,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 6,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 7,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 8,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 9,
-            "YearNo": 2026,
-            "Quantity": 5000.0000
+            "Quantity": 23.0000
           }
         ]
       }
