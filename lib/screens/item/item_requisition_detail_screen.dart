@@ -615,7 +615,7 @@ class _LineCard extends StatelessWidget {
                 children: [
                   _HistoryStrip(
                     history: line.last6MonthsHistory,
-                    unit: line.unitId,
+                    unit: line.unitName,
                   ),
                 ],
               ),

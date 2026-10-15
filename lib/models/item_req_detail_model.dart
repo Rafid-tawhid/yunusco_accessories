@@ -78,6 +78,7 @@ class ItemReqLineModel {
     this.buyerName,
     this.quantity,
     this.unitId,
+    this.unitName,
     this.lineNo,
     this.createdByName,
     this.last6MonthsHistory = const [],
@@ -90,6 +91,7 @@ class ItemReqLineModel {
   final String? buyerName;
   final num? quantity;
   final String? unitId;
+  final String? unitName;
   final num? lineNo;
   final String? createdByName;
   final List<ItemReqHistoryModel> last6MonthsHistory;
@@ -105,6 +107,7 @@ class ItemReqLineModel {
       buyerName: _asString(json['BuyerName']),
       quantity: _asNum(json['Quantity']),
       unitId: _asString(json['UnitId']),
+      unitName: _asString(json['UnitName']),
       lineNo: _asNum(json['LineNo']),
       createdByName: _asString(json['CreatedByName']),
       last6MonthsHistory: _parseHistory(json['Last6MonthsHistory']),
