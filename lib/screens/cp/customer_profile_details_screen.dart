@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../helper_class/api_service_class.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../models/requested_customer_details_model.dart';
+import '../../presentation/providers/repository_providers.dart';
 
 /// ============================================================================
 ///  CustomerProfileDetailScreen
@@ -14,7 +16,7 @@ import '../../models/requested_customer_details_model.dart';
 ///  • Floating zoom controls (+ / – / reset + live %)
 ///  • Accept / Reject bottom bar (visible when `isPending == true`)
 /// ============================================================================
-class CustomerProfileDetailScreen extends StatefulWidget {
+class CustomerProfileDetailScreen extends ConsumerStatefulWidget {
   final int customerId;
   final bool isPending;
 
@@ -25,13 +27,12 @@ class CustomerProfileDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<CustomerProfileDetailScreen> createState() =>
+  ConsumerState<CustomerProfileDetailScreen> createState() =>
       _CustomerProfileDetailScreenState();
 }
 
 class _CustomerProfileDetailScreenState
-    extends State<CustomerProfileDetailScreen> {
-  final ApiService _api = ApiService();
+    extends ConsumerState<CustomerProfileDetailScreen> {
 
   // --------------------------------------------------------------------------
   //  PDF PALETTE / METRICS
@@ -121,7 +122,9 @@ class _CustomerProfileDetailScreenState
     });
 
     try {
-      final result = await _api.getCustomerProfileDetails(widget.customerId);
+      final result = await ref
+          .read(customerRepositoryProvider)
+          .getCustomerProfileDetails(widget.customerId);
       if (!mounted) return;
       setState(() {
         _detail = result;
@@ -779,7 +782,9 @@ class _CustomerProfileDetailScreenState
     HapticFeedback.mediumImpact();
     setState(() => _processing = true);
 
-    final ok = await _api.confirmCustomerProfile(widget.customerId, accept ? 1 : 2);
+    final ok = await ref
+        .read(customerRepositoryProvider)
+        .confirmCustomerProfile(widget.customerId, accept ? 1 : 2);
     
     if (!mounted) return;
     setState(() => _processing = false);

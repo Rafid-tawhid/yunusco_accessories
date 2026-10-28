@@ -1,9 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:yunusco_accessories/helper_class/api_service_class.dart';
-import 'package:yunusco_accessories/helper_class/user_data.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yunusco_accessories/core/session/user_session.dart';
 import 'package:yunusco_accessories/models/monthly_sales_model.dart';
+import 'package:yunusco_accessories/presentation/providers/repository_providers.dart';
 import 'package:yunusco_accessories/screens/costing/show_costing_items.dart';
+import 'package:yunusco_accessories/screens/utilization_list_screen.dart';
 import 'package:yunusco_accessories/theme/app_theme.dart';
 import 'package:yunusco_accessories/widgets/fade_slide_in.dart';
 
@@ -14,14 +16,15 @@ import 'item/item_requisitions_screen.dart';
 import 'management_dashboard_screen.dart';
 import 'cp/requested_customer_screen.dart';
 
-class SimpleDashboardScreen extends StatefulWidget {
+class SimpleDashboardScreen extends ConsumerStatefulWidget {
   const SimpleDashboardScreen({super.key});
 
   @override
-  State<SimpleDashboardScreen> createState() => _SimpleDashboardScreenState();
+  ConsumerState<SimpleDashboardScreen> createState() =>
+      _SimpleDashboardScreenState();
 }
 
-class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
+class _SimpleDashboardScreenState extends ConsumerState<SimpleDashboardScreen> {
   late Future<List<MonthlySalesModel>> _monthlySalesFuture;
 
   final List<_DashboardModule> _modules = [
@@ -67,12 +70,22 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
       gradient: AppColors.moduleGradients[4],
       builder: (_) => const ItemRequisitionsScreen(),
     ),
+
+    _DashboardModule(
+      title: 'Utilization Requests',
+      description: 'Review and confirm utilization requests',
+      icon: Icons.recycling,
+      gradient: AppColors.moduleGradients[4],
+      builder: (_) => const UtilizationListScreen(),
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _monthlySalesFuture = ApiService().getMonthlySalesNew(mons: 12);
+    _monthlySalesFuture = ref
+        .read(dashboardRepositoryProvider)
+        .getMonthlySales(months: 12);
   }
 
   @override
@@ -142,7 +155,7 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   }
 
   Drawer _buildDrawer() {
-    final user = UserData.user;
+    final user = UserSession.user;
     final name = user.userName?.trim().isNotEmpty == true
         ? user.userName!.trim()
         : user.loginName?.trim().isNotEmpty == true

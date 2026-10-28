@@ -3,149 +3,28 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:yunusco_accessories/helper_class/helper_class.dart';
-import 'package:yunusco_accessories/helper_class/user_data.dart';
+import 'package:yunusco_accessories/core/network/api_client.dart';
 import 'package:yunusco_accessories/models/requested_customer_details_model.dart';
-import '../models/dashboard_model.dart';
-import '../models/item_req_model.dart';
-import '../models/item_req_detail_model.dart';
-import '../models/monthly_sales_model.dart';
-import '../models/user_model.dart';
-import '../models/requested_customer_model.dart';
+import '../../models/dashboard_model.dart';
+import '../../models/item_req_model.dart';
+import '../../models/item_req_detail_model.dart';
+import '../../models/monthly_sales_model.dart';
+import '../../models/requested_customer_model.dart';
+import '../../models/utilization_list_model.dart';
 
-class ApiService {
-  static final ApiService _instance = ApiService._internal();
-  factory ApiService() => _instance;
-  ApiService._internal() {
-    _initDio();
-  }
-
-  late Dio _dio;
+class ErpApiDataSource {
+  static final ErpApiDataSource _instance = ErpApiDataSource._internal();
+  factory ErpApiDataSource() => _instance;
+  ErpApiDataSource._internal();
 
   /// Base URL for all API calls
   //static const String baseUrl = 'http://192.168.5.4:8040/';
-  static const String baseUrl = 'http://182.160.122.108:1010/';
-  String? _sessionCookie; // store ASP.NET session cookie
-
-  void _initDio() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
-
-    // Add interceptors
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          // 🔹 Attach cookie if available
-          if (_sessionCookie != null) {
-            options.headers['Cookie'] = _sessionCookie;
-          }
-          debugPrint('➡️ [REQUEST] ${options.method} ${options.uri}');
-          debugPrint('Headers: ${_redactForLog(options.headers)}');
-          debugPrint('Data: ${_redactForLog(options.data)}');
-          return handler.next(options);
-        },
-        onResponse: (response, handler) {
-          // 🔹 Extract cookie if login API returns it
-          if (response.headers.map.containsKey('set-cookie')) {
-            final cookies = response.headers.map['set-cookie']!;
-            for (var cookie in cookies) {
-              if (cookie.startsWith('ASP.NET_SessionId=')) {
-                _sessionCookie = cookie.split(';').first;
-                debugPrint('Session cookie received.');
-              }
-            }
-          }
-
-          debugPrint('✅ [RESPONSE] ${response.statusCode} -> ${_redactForLog(response.data)}',);
-          return handler.next(response);
-        },
-        onError: (DioError error, handler) {
-          debugPrint('❌ [ERROR] ${error.response?.statusCode} -> ${error.message}',);
-          // Handle expired session (e.g., 401 or empty response)
-          if (error.response?.statusCode == 401 || (error.response?.data == null && _sessionCookie != null)) {
-            debugPrint('⚠️ Session expired, please login again.');
-          }
-          return handler.next(error);
-        },
-      ),
-    );
-  }
-
-  Object? _redactForLog(Object? value) {
-    if (value is Map) {
-      return value.map((key, entryValue) {
-        final normalizedKey = key.toString().toLowerCase();
-        final isSensitive =
-            normalizedKey.contains('token') ||
-            normalizedKey.contains('password') ||
-            normalizedKey.contains('cookie') ||
-            normalizedKey.contains('authorization');
-        return MapEntry(
-          key,
-          isSensitive ? '[REDACTED]' : _redactForLog(entryValue),
-        );
-      });
-    }
-    if (value is List) {
-      return value.map(_redactForLog).toList();
-    }
-    return value;
-  }
-
-  /// 🔹 Login API - stores session cookie
-  Future<bool> loginUser(String email, String password) async {
-    try {
-      ApiService apiService = ApiService();
-
-      var response = await apiService.post('Login/Login', {
-        'LoginName': email,
-        'Password': password,
-      });
-      if (response != null) {
-        // Get cookie
-        final cookies = response.headers['set-cookie'];
-
-        if (cookies != null && cookies.isNotEmpty) {
-          final sessionCookie = cookies.first;
-
-          debugPrint('COOKIE => $sessionCookie');
-
-          // Save cookie
-          await DashboardHelper.saveSessionCookie(sessionCookie);
-        }
-
-        if (response.data['output'].toString() == "success") {
-          UserData.user = UserModel.fromJson(response.data['rValue']);
-
-          return true;
-        }
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
+  static const String baseUrl = ApiClient.baseUrl;
+  final ApiClient _client = ApiClient.instance;
 
   /// GET Request
   Future<Response?> get(String endpoint, {Map<String, dynamic>? query}) async {
-    try {
-      final cookie = await DashboardHelper.getSessionCookie();
-      final response = await _dio.get(
-        endpoint,
-        queryParameters: query,
-        options: Options(headers: {'Cookie': cookie}),
-      );
-      return response;
-    } on DioError catch (e) {
-      _handleError(e);
-      return e.response;
-    }
+    return _client.get(endpoint, query: query);
   }
 
   /// POST Request
@@ -154,32 +33,7 @@ class ApiService {
     dynamic data, {
     Map<String, dynamic>? query,
   }) async {
-    try {
-      final response = await _dio.post(
-        endpoint,
-        data: data,
-        queryParameters: query,
-      );
-      return response;
-    } on DioError catch (e) {
-      _handleError(e);
-      return e.response;
-    }
-  }
-
-  /// Common error handler
-  void _handleError(DioError e) {
-    if (e.type == DioErrorType.connectionTimeout) {
-      debugPrint('⏰ Connection timeout');
-    } else if (e.type == DioErrorType.receiveTimeout) {
-      debugPrint('📶 Receive timeout');
-    } else if (e.response != null) {
-      debugPrint(
-        '⚠️ Server error: ${e.response?.statusCode} - ${e.response?.data}',
-      );
-    } else {
-      debugPrint('🚫 Unexpected error: ${e.message}');
-    }
+    return _client.post(endpoint, data, query: query);
   }
 
   /// 🔹 Get Requested Customers
@@ -208,7 +62,10 @@ class ApiService {
     const String endpoint = 'http://182.160.122.108:1010/Home/MonthlySalesNew';
 
     try {
-      final response = await http.get(Uri.parse('$endpoint?mons=$mons'));
+      final response = await http.get(
+        Uri.parse('$endpoint?mons=$mons'),
+        headers: _client.authHeaders,
+      );
 
       debugPrint('Response: ${response.body}');
 
@@ -313,126 +170,6 @@ class ApiService {
       return ItemReqModel.fromJson(Map<String, dynamic>.from(row));
     }).toList();
   }
-
-  final test={
-    "output": "success",
-    "msg": "Requisition fetched successfully.",
-    "master": {
-      "MaterialRequisitionMasterId": 15,
-      "RequisitionNo": "MR-20260929-8879",
-      "RequisitionDate": "2026-09-29 20:42:19",
-      "Remarks": "fake product",
-      "TotalQuantity": 35.0000,
-      "Status": 0,
-      "IsLocked": false,
-      "CreatedBy": 443,
-      "SubmittedBy": "ERP-TEAM",
-      "CreatedDate": "2026-09-29 20:39:20",
-      "DecidedBy": "",
-      "DecidedDate": null,
-      "RejectReason": ""
-    },
-    "details": [
-      {
-        "MaterialRequisitionDetailsId": 14,
-        "MaterialRequisitionMasterId": 15,
-        "ItemId": "34",
-        "ItemName": null,
-        "ProductCode": "AC00034",
-        "ItemDisplay": null,
-        "BuyerId": "257",
-        "BuyerName": "4OCEANS",
-        "Quantity": 12.0000,
-        "UnitId": "8",
-        "UnitName": "Roll",
-        "Price": 1.00,
-        "ImagePath": "Product34_Original.jpg",
-        "LineNo": 1,
-        "CreatedByName": "",
-        "Last6MonthsHistory": [
-          {
-            "MonthNo": 4,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 5,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 6,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 7,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 8,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 9,
-            "YearNo": 2026,
-            "Quantity": 12.0000
-          }
-        ]
-      },
-      {
-        "MaterialRequisitionDetailsId": 15,
-        "MaterialRequisitionMasterId": 15,
-        "ItemId": "143",
-        "ItemName": null,
-        "ProductCode": "AC00143",
-        "ItemDisplay": null,
-        "BuyerId": "29",
-        "BuyerName": "AAI",
-        "Quantity": 23.0000,
-        "UnitId": "21",
-        "UnitName": "Pound",
-        "Price": 1.00,
-        "ImagePath": "Product143_Original.JPG",
-        "LineNo": 2,
-        "CreatedByName": "",
-        "Last6MonthsHistory": [
-          {
-            "MonthNo": 4,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 5,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 6,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 7,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 8,
-            "YearNo": 2026,
-            "Quantity": 0.0000
-          },
-          {
-            "MonthNo": 9,
-            "YearNo": 2026,
-            "Quantity": 23.0000
-          }
-        ]
-      }
-    ]
-  };
 
   Future<ItemReqDetailModel> getManagementMaterialRequisition(num id) async {
     final response = await get(
@@ -562,6 +299,7 @@ class ApiService {
 
       // Add headers if needed
       request.headers['Accept'] = 'application/json';
+      request.headers.addAll(ApiClient.instance.authHeaders);
 
       // Add fields
       request.fields['userId'] = userId.toString();
@@ -614,14 +352,6 @@ class ApiService {
         }
       } else {
         debugPrint('❌ Upload failed with status ${response.statusCode}');
-
-        // Try to extract error message
-        String errorMessage =
-            'Upload failed with status ${response.statusCode}';
-        if (responseData.contains('The resource cannot be found')) {
-          errorMessage = 'API endpoint not found. Check URL: $apiUrl';
-        }
-
         return response;
       }
     } catch (e, stackTrace) {
@@ -630,5 +360,19 @@ class ApiService {
 
       return e;
     }
+  }
+
+  //utilization
+
+  Future<List<UtilizationListModel>> getConfirmedUtilizationRequests() async {
+    final List<UtilizationListModel> utilizationList = [];
+    final response = await get('/Customers/UtilizationListConfirmed');
+    if (response != null && response.statusCode == 200)  {
+      for(var i in response.data['rows']){
+        utilizationList.add(UtilizationListModel.fromJson(i));
+      }
+      debugPrint('✅ Confirmed utilization requests: ${utilizationList.length}');
+    }
+    return utilizationList;
   }
 }

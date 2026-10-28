@@ -9,7 +9,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../firebase_options.dart';
-import '../helper_class/api_service_class.dart';
+import '../data/datasources/erp_api_data_source.dart';
+import '../data/repositories/notification_repository.dart' as data;
 import '../models/user_model.dart';
 
 typedef NotificationTapHandler = void Function(Map<String, dynamic> data);
@@ -32,7 +33,8 @@ class PushNotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
-  final ApiService _api = ApiService();
+  final data.NotificationRepositoryImpl _notificationRepository =
+      data.NotificationRepositoryImpl(ErpApiDataSource());
 
   NotificationTapHandler? _onNotificationTap;
   UserModel? _signedInUser;
@@ -157,17 +159,11 @@ class PushNotificationService {
       );
     }
 
-    final response = await _api.post('api/user/CheckDeviceToken', {
-      'roleId': roleId,
-      'FirebaseDeviceToken': token,
-      'Userid': userId,
-    });
-    final statusCode = response?.statusCode;
-    if (statusCode == null || statusCode < 200 || statusCode >= 300) {
-      throw StateError(
-        'FCM token registration failed (HTTP ${statusCode ?? 'no response'}).',
-      );
-    }
+    await _notificationRepository.registerDeviceToken(
+      userId: userId,
+      roleId: roleId,
+      token: token,
+    );
   }
 
   void _handleForegroundMessage(RemoteMessage message) {

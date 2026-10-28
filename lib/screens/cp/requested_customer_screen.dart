@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
-import '../../helper_class/api_service_class.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../models/requested_customer_model.dart';
+import '../../presentation/providers/repository_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/fade_slide_in.dart';
 import 'customer_profile_details_screen.dart';
 
-class RequestedCustomerScreen extends StatefulWidget {
+class RequestedCustomerScreen extends ConsumerStatefulWidget {
   const RequestedCustomerScreen({super.key});
 
   @override
-  State<RequestedCustomerScreen> createState() => _RequestedCustomerScreenState();
+  ConsumerState<RequestedCustomerScreen> createState() =>
+      _RequestedCustomerScreenState();
 }
 
 enum _CustomerFilter { pending, confirmed, rejected }
 
-class _RequestedCustomerScreenState extends State<RequestedCustomerScreen> {
-  final ApiService _apiService = ApiService();
+class _RequestedCustomerScreenState
+    extends ConsumerState<RequestedCustomerScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   List<RequestedCustomerModel> _customers = [];
@@ -40,7 +43,9 @@ class _RequestedCustomerScreenState extends State<RequestedCustomerScreen> {
 
   Future<void> _fetchCustomers() async {
     setState(() => _isLoading = true);
-    final customers = await _apiService.getRequestedCustomers();
+    final customers = await ref
+        .read(customerRepositoryProvider)
+        .getRequestedCustomers();
     if (!mounted) return;
     setState(() {
       _customers = customers;

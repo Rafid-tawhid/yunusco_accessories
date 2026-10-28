@@ -1,29 +1,35 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:yunusco_accessories/helper_class/api_service_class.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yunusco_accessories/models/dashboard_model.dart';
+import 'package:yunusco_accessories/presentation/providers/repository_providers.dart';
 import 'package:yunusco_accessories/theme/app_theme.dart';
 
-class ManagementDashboardScreen extends StatefulWidget {
+class ManagementDashboardScreen extends ConsumerStatefulWidget {
   const ManagementDashboardScreen({super.key});
 
   @override
-  State<ManagementDashboardScreen> createState() =>
+  ConsumerState<ManagementDashboardScreen> createState() =>
       _ManagementDashboardScreenState();
 }
 
-class _ManagementDashboardScreenState extends State<ManagementDashboardScreen> {
+class _ManagementDashboardScreenState
+    extends ConsumerState<ManagementDashboardScreen> {
   late Future<DashboardModel> _dashboardFuture;
 
   @override
   void initState() {
     super.initState();
-    _dashboardFuture = ApiService().getManagementDashboardDataV2();
+    _dashboardFuture = ref
+        .read(dashboardRepositoryProvider)
+        .getManagementDashboard();
   }
 
   void _reload() {
     setState(() {
-      _dashboardFuture = ApiService().getManagementDashboardDataV2();
+      _dashboardFuture = ref
+          .read(dashboardRepositoryProvider)
+          .getManagementDashboard();
     });
   }
 

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:yunusco_accessories/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
-import 'helper_class/user_data.dart';
+import 'core/session/user_session.dart';
 import 'screens/dashboard_screen.dart';
 import 'services/push_notification_service.dart';
 import 'theme/app_theme.dart';
@@ -26,7 +26,7 @@ Future<void> main() async {
 void _openDashboardFromNotification(Map<String, dynamic> data) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     final navigator = appNavigatorKey.currentState;
-    if (navigator == null || UserData.user.userId == null) return;
+    if (navigator == null || UserSession.user.userId == null) return;
     navigator.push(
       MaterialPageRoute<void>(builder: (_) => const SimpleDashboardScreen()),
     );

@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
-import 'package:yunusco_accessories/helper_class/api_service_class.dart';
-import 'package:yunusco_accessories/helper_class/helper_class.dart';
+import 'package:yunusco_accessories/core/helpers/image_helper.dart';
 import 'package:yunusco_accessories/widgets/custom_alerts.dart';
+import 'package:yunusco_accessories/presentation/providers/repository_providers.dart';
 import 'package:image/image.dart' as img;
 
-class ChalanPreviewScreen extends StatefulWidget {
+class ChalanPreviewScreen extends ConsumerStatefulWidget {
   final String qrData;
   final Map<String, dynamic> parsedData;
   final File? imageFile;
@@ -20,10 +21,11 @@ class ChalanPreviewScreen extends StatefulWidget {
   });
 
   @override
-  State<ChalanPreviewScreen> createState() => _ChalanPreviewScreenState();
+  ConsumerState<ChalanPreviewScreen> createState() =>
+      _ChalanPreviewScreenState();
 }
 
-class _ChalanPreviewScreenState extends State<ChalanPreviewScreen> {
+class _ChalanPreviewScreenState extends ConsumerState<ChalanPreviewScreen> {
   bool _isSubmitting = false;
   bool _isProcessingImage = true;
   String? _dcFromImage;
@@ -1041,7 +1043,7 @@ class _ChalanPreviewScreenState extends State<ChalanPreviewScreen> {
     //   return;
     // }
     File file=await _cropReceivedByArea(widget.imageFile!);
-    _isSignAttached=await DashboardHelper.hasAnyColorInFile(file);
+    _isSignAttached = await ImageHelper.hasAnyColorInFile(file);
 
     await _performSubmission();
   }
@@ -1146,7 +1148,7 @@ class _ChalanPreviewScreenState extends State<ChalanPreviewScreen> {
       // Compress image before upload
       File? compressedImage;
       try {
-        compressedImage = await DashboardHelper.compressImage(
+        compressedImage = await ImageHelper.compressImage(
           widget.imageFile!,
           quality: 50, // Adjust quality (1-100), 85 is good balance
         );
@@ -1161,13 +1163,13 @@ class _ChalanPreviewScreenState extends State<ChalanPreviewScreen> {
         compressedImage = widget.imageFile;
       }
 
-      final response = await ApiService.uploadChallanWithQR(
+      final response = await ref.read(challanRepositoryProvider).uploadWithQr(
         userId: apiData['userId'] as int,
         portal: apiData['portal'] as String,
         challanId: apiData['chalanId'] as String,
         imageFile: compressedImage ?? widget.imageFile!, // Use compressed if available
         isIdentified: _isSignAttached,
-        qRMatchingPercentage: _matchingPercentage,
+        qrMatchingPercentage: _matchingPercentage,
 
       );
 

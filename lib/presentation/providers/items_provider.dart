@@ -1,39 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../helper_class/api_service_class.dart';
-import '../models/items_model.dart';
 
-// ============================================
-// PROVIDER 1: API Service Provider
-// ============================================
-// This makes ApiService available throughout the app
-final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService();
-});
+import '../../models/items_model.dart';
+import 'repository_providers.dart';
 
 // ============================================
 // PROVIDER 2: Items List Provider
 // ============================================
 // This fetches items from API and handles loading/error states
 final itemsListProvider = FutureProvider<List<ItemsModel>>((ref) async {
-  final apiService = ref.read(apiServiceProvider);
-
-  List<ItemsModel> items=[];
-  // Make API call
-  final response = await apiService.get('Priceing/GetNewItem', query: {
-    'searchText': '',
-  });
-  debugPrint('Response: $response');
-  if(response!=null){
-    // Convert each JSON to ItemsModel
-     for(var i in response.data){
-       items.add(ItemsModel.fromJson(i));
-     }
-
-     debugPrint('Items: $items');
-  }
-
-  return items;
+  return ref.watch(itemRepositoryProvider).getItems();
 });
 
 // ============================================
@@ -89,9 +64,9 @@ final categoryFilteredItemsProvider = Provider<List<ItemsModel>>((ref) {
     return items;
   }
 
-  return items.where((item) =>
-  item.productLineName == selectedCategory
-  ).toList();
+  return items
+      .where((item) => item.productLineName == selectedCategory)
+      .toList();
 });
 
 // ============================================

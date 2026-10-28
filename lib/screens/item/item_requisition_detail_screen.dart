@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../helper_class/api_service_class.dart';
-import '../../helper_class/user_data.dart';
+import '../../core/session/user_session.dart';
 import '../../models/item_req_detail_model.dart';
+import '../../presentation/providers/repository_providers.dart';
 import '../../theme/app_theme.dart';
 
-
-class ItemRequisitionDetailScreen extends StatefulWidget {
+class ItemRequisitionDetailScreen extends ConsumerStatefulWidget {
   const ItemRequisitionDetailScreen({super.key, required this.requisitionId});
 
   final num requisitionId;
 
   @override
-  State<ItemRequisitionDetailScreen> createState() =>
+  ConsumerState<ItemRequisitionDetailScreen> createState() =>
       _ItemRequisitionDetailScreenState();
 }
 
 class _ItemRequisitionDetailScreenState
-    extends State<ItemRequisitionDetailScreen> {
-  final ApiService _api = ApiService();
+    extends ConsumerState<ItemRequisitionDetailScreen> {
   ItemReqDetailModel? _requisition;
   String? _error;
   bool _isLoading = true;
   bool _isProcessing = false;
+
+  // approved qty per line, keyed by a stable line key
+  final Map<String, num> _approvedQty = {};
 
   @override
   void initState() {
@@ -36,13 +38,18 @@ class _ItemRequisitionDetailScreenState
       _error = null;
     });
     try {
-      final requisition = await _api.getManagementMaterialRequisition(
-        widget.requisitionId,
-      );
+      final requisition = await ref
+          .read(itemRepositoryProvider)
+          .getMaterialRequisitionDetails(widget.requisitionId);
       if (!mounted) return;
       setState(() {
         _requisition = requisition;
         _isLoading = false;
+        // initialize approved qty = requested qty
+        _approvedQty.clear();
+        for (final line in requisition.details) {
+          _approvedQty[_lineKey(line)] = line.quantity ?? 0;
+        }
       });
     } catch (error) {
       if (!mounted) return;
@@ -52,6 +59,10 @@ class _ItemRequisitionDetailScreenState
       });
     }
   }
+
+  // stable key for a line
+  String _lineKey(ItemReqLineModel line) =>
+      '${line.itemId ?? 'x'}_${line.lineNo ?? 0}';
 
   @override
   Widget build(BuildContext context) {
@@ -146,9 +157,19 @@ class _ItemRequisitionDetailScreenState
                 )
               else
                 ...requisition.details.map(
-                      (line) => Padding(
+                  (line) => Padding(
+                    // ✅ stable key so line state (focus, cursor) survives rebuilds
+                    key: ValueKey(_lineKey(line)),
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: _LineCard(line: line),
+                    child: _LineCard(
+                      line: line,
+                      initialApprovedQty: _approvedQty[_lineKey(line)],
+                      enabled: requisition.status == 0 && !_isProcessing,
+                      onApprovedQtyChanged: (value) {
+                        if (value == null) return;
+                        setState(() => _approvedQty[_lineKey(line)] = value);
+                      },
+                    ),
                   ),
                 ),
               if (requisition.rejectReason?.trim().isNotEmpty == true) ...[
@@ -194,13 +215,13 @@ class _ItemRequisitionDetailScreenState
                           : null,
                       icon: _isProcessing
                           ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Icon(Icons.check_rounded, size: 18),
                       label: const Text('Approve'),
                       style: ElevatedButton.styleFrom(
@@ -219,10 +240,10 @@ class _ItemRequisitionDetailScreenState
   }
 
   Future<void> _submitDecision(
-      ItemReqDetailModel requisition,
-      String decision,
-      ) async {
-    final decidedBy = UserData.user.userId;
+    ItemReqDetailModel requisition,
+    String decision,
+  ) async {
+    final decidedBy = UserSession.user.userId;
     if (decidedBy == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -232,19 +253,61 @@ class _ItemRequisitionDetailScreenState
       return;
     }
 
+    // validate approved quantities
+    for (final line in requisition.details) {
+      final key = _lineKey(line);
+      final approved = _approvedQty[key];
+      if (approved == null || approved < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Please enter a valid approved quantity for line ${line.lineNo ?? ''}.',
+            ),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        return;
+      }
+      if (approved > (line.quantity ?? 0)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Approved qty for line ${line.lineNo ?? ''} cannot exceed requested qty.',
+            ),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        return;
+      }
+    }
+
     final comment = await _requestComment(decision);
     if (comment == null || !mounted) return;
     setState(() => _isProcessing = true);
 
     try {
-      await _api.decideMaterialRequisition(
-        ItemReqDecisionRequest(
-          id: requisition.materialRequisitionMasterId ?? widget.requisitionId,
-          decision: decision,
-          comment: comment,
-          decidedBy: decidedBy.toString(),
-        ),
-      );
+      // build approved qty payload
+      final approvedLines = requisition.details.map((line) {
+        return ItemReqApprovedQty(
+          itemId: line.itemId,
+          lineNo: line.lineNo,
+          approvedQty: _approvedQty[_lineKey(line)] ?? line.quantity ?? 0,
+        );
+      }).toList();
+
+      await ref
+          .read(itemRepositoryProvider)
+          .decideMaterialRequisition(
+            ItemReqDecisionRequest(
+              id:
+                  requisition.materialRequisitionMasterId ??
+                  widget.requisitionId,
+              decision: decision,
+              comment: comment,
+              decidedBy: decidedBy.toString(),
+              approvedLines: approvedLines,
+            ),
+          );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -302,7 +365,10 @@ class _DecisionCommentDialogState extends State<_DecisionCommentDialog> {
   Widget build(BuildContext context) {
     final decision = widget.decision;
     return AlertDialog(
-      title: Text('$decision requisition?', style: const TextStyle(fontSize: 16)),
+      title: Text(
+        '$decision requisition?',
+        style: const TextStyle(fontSize: 16),
+      ),
       backgroundColor: Colors.white,
       contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
       content: Column(
@@ -322,10 +388,13 @@ class _DecisionCommentDialogState extends State<_DecisionCommentDialog> {
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
               isDense: true,
-              contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              hintText:
-              decision == 'Reject' ? 'Rejection note' : 'Optional note',
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+              hintText: decision == 'Reject'
+                  ? 'Rejection note'
+                  : 'Optional note',
               errorText: _validationError,
               border: const OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.grey, width: .5),
@@ -345,15 +414,16 @@ class _DecisionCommentDialogState extends State<_DecisionCommentDialog> {
             final comment = _controller.text.trim();
             if (decision == 'Reject' && comment.isEmpty) {
               setState(
-                    () => _validationError = 'A rejection note is required.',
+                () => _validationError = 'A rejection note is required.',
               );
               return;
             }
             Navigator.pop(context, comment);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-            decision == 'Approve' ? AppColors.success : AppColors.danger,
+            backgroundColor: decision == 'Approve'
+                ? AppColors.success
+                : AppColors.danger,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             minimumSize: const Size(0, 36),
             textStyle: const TextStyle(fontSize: 13),
@@ -376,7 +446,6 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rows = <List<String>>[
-      //['Requisition', requisition.requisitionNo ?? '—'],
       ['Status', _statusLabel(requisition.status)],
       if (requisition.submittedBy?.isNotEmpty == true)
         ['Submitted by', requisition.submittedBy!],
@@ -386,27 +455,13 @@ class _SummaryCard extends StatelessWidget {
         ['Total quantity', _formatQuantity(requisition.totalQuantity!)],
       if (requisition.remarks?.trim().isNotEmpty == true)
         ['Remarks', requisition.remarks!.trim()],
-      // if (requisition.isLocked != null)
-      //   ['Locked', requisition.isLocked! ? 'Yes' : 'No'],
-      // if (requisition.createdDate?.isNotEmpty == true)
-      //   ['Created date', _formatDate(requisition.createdDate!)],
-      // if (requisition.decidedBy?.isNotEmpty == true)
-      //   ['Decided by', requisition.decidedBy!],
-      // if (requisition.decidedDate?.isNotEmpty == true)
-      //   ['Decision date', _formatDate(requisition.decidedDate!)],
     ];
 
     final borderColor = AppColors.textSecondary.withValues(alpha: 0.35);
 
     return Table(
-      border: TableBorder.all(
-        color: borderColor,
-        width: 0.8,
-      ),
-      columnWidths: const {
-        0: FlexColumnWidth(0.42),
-        1: FlexColumnWidth(0.58),
-      },
+      border: TableBorder.all(color: borderColor, width: 0.8),
+      columnWidths: const {0: FlexColumnWidth(0.42), 1: FlexColumnWidth(0.58)},
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
         for (final row in rows)
@@ -462,58 +517,93 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _KV {
-  final String label;
-  final String value;
-  const _KV(this.label, this.value);
-}
-
-class _KVRow extends StatelessWidget {
-  const _KVRow({required this.item});
-  final _KV item;
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      text: TextSpan(
-        style: const TextStyle(
-          fontSize: 12,
-          color: AppColors.textPrimary,
-          height: 1.25,
-        ),
-        children: [
-          TextSpan(
-            text: '${item.label}: ',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          TextSpan(
-            text: item.value,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Item line — compact single card with collapsible history
 // ---------------------------------------------------------------------------
-class _LineCard extends StatelessWidget {
-  const _LineCard({required this.line});
+class _LineCard extends StatefulWidget {
+  const _LineCard({
+    required this.line,
+    required this.initialApprovedQty,
+    required this.onApprovedQtyChanged,
+    this.enabled = true,
+  });
 
   final ItemReqLineModel line;
+  final num? initialApprovedQty;
+  final ValueChanged<num?> onApprovedQtyChanged;
+  final bool enabled;
+
+  @override
+  State<_LineCard> createState() => _LineCardState();
+}
+
+class _LineCardState extends State<_LineCard> {
+  late final TextEditingController _approvedQtyCtrl;
+  final FocusNode _approvedQtyFocus = FocusNode(); // ✅ NEW
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialApprovedQty ?? widget.line.quantity ?? 0;
+    _approvedQtyCtrl = TextEditingController(text: _fmt(initial));
+  }
+
+  @override
+  void didUpdateWidget(covariant _LineCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the parent reset the value (e.g. reload / processing finished),
+    // reflect it — but ONLY when the field is not focused, so we don't
+    // yank the cursor while the user is typing.
+    if (!_approvedQtyFocus.hasFocus) {
+      final next = widget.initialApprovedQty ?? widget.line.quantity ?? 0;
+      final formatted = _fmt(next);
+      if (_approvedQtyCtrl.text != formatted) {
+        _approvedQtyCtrl.text = formatted;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _approvedQtyFocus.dispose(); // ✅ NEW
+    _approvedQtyCtrl.dispose();
+    super.dispose();
+  }
+
+  String _fmt(num v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
+
+  void _onChanged(String raw) {
+    final parsed = num.tryParse(raw.trim());
+    if (parsed == null) {
+      setState(() => _errorText = 'Enter a number');
+      widget.onApprovedQtyChanged(null);
+      return;
+    }
+    if (parsed < 0) {
+      setState(() => _errorText = 'Cannot be negative');
+      widget.onApprovedQtyChanged(null);
+      return;
+    }
+    final requested = widget.line.quantity ?? 0;
+    if (parsed > requested) {
+      setState(() => _errorText = 'Exceeds requested ($requested)');
+      widget.onApprovedQtyChanged(null);
+      return;
+    }
+    setState(() => _errorText = null);
+    widget.onApprovedQtyChanged(parsed);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final line = widget.line;
     final title = line.itemName?.isNotEmpty == true
         ? line.itemName!
         : 'Item ${line.itemId ?? ''}';
-    final qty = line.quantity == null
+    final requestedQty = line.quantity == null
         ? '—'
-        : '${_formatQuantity(line.quantity!)} ${line.unitId ?? ''}'.trim();
+        : '${_formatQuantity(line.quantity!)} ${line.unitName ?? ''}'.trim();
     final buyer = line.buyerName?.isNotEmpty == true
         ? line.buyerName!
         : (line.buyerId?.isNotEmpty == true ? line.buyerId! : '—');
@@ -524,6 +614,7 @@ class _LineCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 22,
@@ -544,36 +635,93 @@ class _LineCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Requested: $requestedQty',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // ✅ editable Approved Qty (with its own FocusNode)
+          Row(
+            children: [
+              const SizedBox(
+                width: 92,
                 child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                  'Approved Qty',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  qty,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+              Expanded(
+                child: SizedBox(
+                  height: 38,
+                  child: TextField(
+                    controller: _approvedQtyCtrl,
+                    focusNode: _approvedQtyFocus, // ✅ NEW
+                    enabled: widget.enabled,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    style: const TextStyle(fontSize: 13),
+                    onChanged: _onChanged,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      suffixText: line.unitName,
+                      errorText: _errorText,
+                      border: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: .5),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 3),
+
+          const SizedBox(height: 4),
           Text(
             [
               'Buyer: $buyer',
@@ -654,7 +802,7 @@ class _HistoryStrip extends StatelessWidget {
           final qty = h.quantity == null
               ? '—'
               : '${_formatQuantity(h.quantity!)}'
-              '${unit?.isNotEmpty == true ? ' $unit' : ''}';
+                    '${unit?.isNotEmpty == true ? ' $unit' : ''}';
 
           return Container(
             width: 86,

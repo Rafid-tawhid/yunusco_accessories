@@ -122,35 +122,54 @@ class ItemReqHistoryModel {
   final num? yearNo;
   final num? quantity;
 
-
   factory ItemReqHistoryModel.fromJson(Map<String, dynamic> json) {
     return ItemReqHistoryModel(
       monthNo: _asNum(json['MonthNo']),
       yearNo: _asNum(json['YearNo']),
-      quantity: _asNum(json['Quantity'])
-
+      quantity: _asNum(json['Quantity']),
     );
   }
 }
 
 class ItemReqDecisionRequest {
-  const ItemReqDecisionRequest({
-    required this.id,
-    required this.decision,
-    required this.comment,
-    required this.decidedBy,
-  });
-
   final num id;
   final String decision;
   final String comment;
   final String decidedBy;
+  final List<ItemReqApprovedQty> approvedLines; // ✅ NEW
+
+  ItemReqDecisionRequest({
+    required this.id,
+    required this.decision,
+    required this.comment,
+    required this.decidedBy,
+    this.approvedLines = const [],
+  });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'decision': decision,
-    'comment': comment,
-    'decidedBy': decidedBy,
+    'Id': id,
+    'Decision': decision,
+    'Comment': comment,
+    'DecidedBy': decidedBy,
+    'Lines': approvedLines.map((e) => e.toJson()).toList(), // ✅
+  };
+}
+
+class ItemReqApprovedQty {
+  const ItemReqApprovedQty({
+    this.itemId,
+    this.lineNo,
+    required this.approvedQty,
+  });
+
+  final String? itemId;
+  final num? lineNo;
+  final num approvedQty;
+
+  Map<String, dynamic> toJson() => {
+    if (itemId != null) 'ItemId': itemId,
+    if (lineNo != null) 'LineNo': lineNo,
+    'ApprovedQty': approvedQty,
   };
 }
 

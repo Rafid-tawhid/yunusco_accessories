@@ -1,12 +1,11 @@
 // screens/view_accessories_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yunusco_accessories/firebase/auth_service.dart';
-import 'package:yunusco_accessories/helper_class/api_service_class.dart';
-import 'package:yunusco_accessories/helper_class/helper_class.dart';
+import 'package:yunusco_accessories/core/constants/accessory_status.dart';
 
 import '../../models/acessories_model.dart';
-import '../../riverpod/costing_provider.dart';
+import '../../presentation/providers/costing_provider.dart';
+import '../../presentation/providers/repository_providers.dart';
 
 class ViewAccessoriesScreen extends ConsumerWidget {
   const ViewAccessoriesScreen({super.key});
@@ -427,12 +426,13 @@ class ViewAccessoriesScreen extends ConsumerWidget {
                   isEcoFriendly: accessory.isEcoFriendly,
                   createdDate: accessory.createdDate,
                   modifiedDate: DateTime.now().toString(),
-                  status: DashboardHelper.modifyStatus, // Keep the same status
+                  status: AccessoryStatus.modify,
                 );
 
                 // Update in Firebase
-                FirebaseService apiservice=FirebaseService();
-                apiservice.updateAccessory(updatedAccessory);
+                await ref
+                    .read(accessoryRepositoryProvider)
+                    .updateAccessory(updatedAccessory);
 
                 // Refresh the list
                 ref.invalidate(accessoriesListProvider);

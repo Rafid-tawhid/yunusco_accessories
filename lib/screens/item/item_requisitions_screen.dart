@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../helper_class/api_service_class.dart';
 import '../../models/item_req_model.dart';
+import '../../presentation/providers/repository_providers.dart';
 import '../../theme/app_theme.dart';
 import 'item_requisition_detail_screen.dart';
 
-class ItemRequisitionsScreen extends StatefulWidget {
+class ItemRequisitionsScreen extends ConsumerStatefulWidget {
   const ItemRequisitionsScreen({super.key});
 
   @override
-  State<ItemRequisitionsScreen> createState() => _ItemRequisitionsScreenState();
+  ConsumerState<ItemRequisitionsScreen> createState() =>
+      _ItemRequisitionsScreenState();
 }
 
 enum _ReqFilter { pending, approved, rejected }
 
-class _ItemRequisitionsScreenState extends State<ItemRequisitionsScreen> {
-  final ApiService _apiService = ApiService();
+class _ItemRequisitionsScreenState
+    extends ConsumerState<ItemRequisitionsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   List<ItemReqModel> _requisitions = [];
@@ -47,8 +49,9 @@ class _ItemRequisitionsScreenState extends State<ItemRequisitionsScreen> {
     });
 
     try {
-      final requisitions =
-      await _apiService.getPendingMaterialRequisitionsNew();
+      final requisitions = await ref
+          .read(itemRepositoryProvider)
+          .getPendingMaterialRequisitions();
       if (!mounted) return;
       setState(() {
         _requisitions = requisitions;

@@ -1,10 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yunusco_accessories/helper_class/api_service_class.dart';
-import 'package:yunusco_accessories/helper_class/user_data.dart';
-import 'package:yunusco_accessories/models/user_model.dart';
 
-
+import '../../domain/repositories/auth_repository.dart';
+import 'repository_providers.dart';
 
 class AuthState {
   final bool isLoading;
@@ -17,27 +14,18 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(AuthState());
+  AuthNotifier(this._repository) : super(AuthState());
+
+  final AuthRepository _repository;
 
   Future<bool> loginUser(String email, String password) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      ApiService apiService = ApiService();
-      var data = await apiService.post('Login/Login', {
-        'LoginName': email,
-        'Password': password
-      });
-      debugPrint('This is data ${data!.data['output'].toString()=="success"}');
-
-      if (data.data['output'].toString()=="success") {
-        UserData.user = UserModel.fromJson(data.data['rValue']);
-        debugPrint('Is this calling ??');
-        return true; // Success
-      } else {
-        state = state.copyWith(error: 'Login failed: ${data.data['message']}');
-        return false; // Failed
+      final result = await _repository.login(email, password);
+      if (!result.isSuccess) {
+        state = state.copyWith(error: 'Login failed: ${result.message ?? ''}');
       }
-
+      return result.isSuccess;
     } catch (e) {
       state = state.copyWith(error: e.toString());
       return false; // Error
@@ -60,5 +48,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-      (ref) => AuthNotifier(),
+  (ref) => AuthNotifier(ref.watch(authRepositoryProvider)),
 );
